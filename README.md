@@ -1,6 +1,6 @@
 # NAME
 
-Align::Sequence - Blah blah blah
+Align::Sequence - Align two sequences
 
 # SYNOPSIS
 
@@ -8,7 +8,7 @@ Align::Sequence - Blah blah blah
 
 # DESCRIPTION
 
-Align::Sequence is
+Align::Sequence is an implementation based on a LCS algorithm.
 
 # AUTHOR
 
