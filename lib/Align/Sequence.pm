@@ -122,7 +122,7 @@ __END__
 
 =head1 NAME
 
-Align::Sequence - Blah blah blah
+Align::Sequence - Align two sequences
 
 =head1 SYNOPSIS
 
@@ -130,7 +130,7 @@ Align::Sequence - Blah blah blah
 
 =head1 DESCRIPTION
 
-Align::Sequence is
+Align::Sequence is an implementation based on a LCS algorithm.
 
 =head1 AUTHOR
 
