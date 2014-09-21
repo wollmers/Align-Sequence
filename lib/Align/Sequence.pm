@@ -1,7 +1,7 @@
 package Align::Sequence;
 
 use strict;
-use 5.008_005;
+use 5.010_001;
 our $VERSION = '0.01';
 
 sub new {
