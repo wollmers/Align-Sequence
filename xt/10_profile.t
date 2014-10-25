@@ -7,22 +7,10 @@ use utf8;
 
 use lib qw(../lib/);
 
-use Test::More;
-
 my $class = 'Align::Sequence';
+use Align::Sequence;
 
-use_ok($class);
-
-my $object = new_ok($class);
-
-if (0) {
-ok($object->new());
-ok($object->new(1,2));
-ok($object->new({}));
-ok($object->new({a => 1}));
-
-ok($class->new());
-}
+my $object = $class->new;
 
 my $examples = [
   ['abcabba_',
@@ -61,9 +49,9 @@ my $examples = [
     '_bcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'],
 ];
 
-if (0) {
+
 #for my $example (@$examples) {
-for my $example ($examples->[4]) {
+for my $example ($examples->[16]) {
   my $a = $example->[0];
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;
@@ -72,15 +60,10 @@ for my $example ($examples->[4]) {
   
   my ($sa,$sb) = $object->hunks2sequences($hunks);
   my $ra = join '', map { $_ ? $_ : '_'} @$sa;
-  my $rb = join '', map { $_ ? $_ : '_'} @$sb;
-
-  is_deeply([$ra,$rb],[$a, $b],"$a, $b");
-  
+  my $rb = join '', map { $_ ? $_ : '_'} @$sb;  
 }
-}
-
-for my $example (@$examples) {
-#for my $example ($examples->[14]) {
+#for my $example (@$examples) {
+for my $example ($examples->[16]) {
   my $a = $example->[0];
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;
@@ -89,23 +72,6 @@ for my $example (@$examples) {
   
   my ($sa,$sb) = $object->hunks2sequences($hunks);
   my $ra = join '', map { $_ ? $_ : '_'} @$sa;
-  my $rb = join '', map { $_ ? $_ : '_'} @$sb;
-
-  is_deeply([$ra,$rb],[$a, $b],"$a, $b");
-  
+  my $rb = join '', map { $_ ? $_ : '_'} @$sb;  
 }
 
-=comment
-
-is($object->binsearch([0],-1),0,'[0],-1');
-is($object->binsearch([0],0),undef,'[0],0');
-is($object->binsearch([],-1),undef,'[],-1');
-is($object->binsearch([0,1],0),1,'[0,1],1');
-is($object->binsearch([0,1,2],0),1,'[0,1,2],1');
-is($object->binsearch([0,1,2],3),undef,'[0,1,2],-1');
-
-=cut
-
-
-
-done_testing;

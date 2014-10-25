@@ -1,8 +1,12 @@
 package Align::Sequence;
 
 use strict;
+use warnings;
+
 use 5.010_001;
 our $VERSION = '0.01';
+
+use Data::Dumper;
 
 sub new {
   my $class = shift;
@@ -32,11 +36,13 @@ sub align {
   my $Pi;
   my $Pi1;
   
+  my $align = 1;
+  
   my $hunk;
    
   for ($i = 0; $i <= $#$Xmatches; $i++) {
     $hunk = [];
-    $Pi  =  $YPos->{$X->[$Xmatches->[$i]]}->[0] // $#$Y+1; # Position in Y of ith symbol
+    $Pi  =  $YPos->{$X->[$Xmatches->[$i]]}->[0] // @$Y; # Position in Y of ith symbol
     $Pi1 =  ($i < $#$Xmatches && defined $YPos->{$X->[$Xmatches->[$i+1]]}->[0]) 
   	  ? $YPos->{$X->[$Xmatches->[$i+1]]}->[0] : -1; # Position in Y of i+1st symbol
     #print STDERR '$i: ',$i,' $Pi: ',$Pi,' $Pi1: ',$Pi1,' $R: ',$R,"\n";
@@ -45,25 +51,25 @@ sub align {
       shift @{$YPos->{$X->[$Xmatches->[$i+1]]}};
       $Pi1 = $YPos->{$X->[$Xmatches->[$i+1]]}->[0] // -1;
     }
-    while ($Pi < $R && $Pi < $#$Y+1) {
+    while ($Pi < $R && $Pi < @$Y) {
       #print STDERR '$Pi < $R',"\n";
       shift @{$YPos->{$X->[$Xmatches->[$i]]}};
-      $Pi =  $YPos->{$X->[$Xmatches->[$i]]}->[0] // $#$Y+1;
+      $Pi =  $YPos->{$X->[$Xmatches->[$i]]}->[0] // @$Y;
     }
     if ($Pi > $Pi1 && $Pi1 > $R) {
       $hunk = [$Xmatches->[$i+1],$Pi1];
       shift @{$YPos->{$X->[$Xmatches->[$i+1]]}};
       $R = $Pi1;
-      $i = $i+1;
+      $i++;
     } 
-    elsif ($Pi <  $#$Y+1) {
+    elsif ($Pi <  @$Y) {
       $hunk = [$Xmatches->[$i],$Pi];
       shift @{$YPos->{$X->[$Xmatches->[$i]]}}; 
       $R = $Pi;
     }
 
     if (scalar @$hunk) { 
-      while ($Xcurrent+1 < $hunk->[0] ||  $Ycurrent+1 < $hunk->[1] ) {
+      while ($align && ($Xcurrent+1 < $hunk->[0] ||  $Ycurrent+1 < $hunk->[1]) ) {
         $Xtemp = '';
         $Ytemp = '';
         if ($Xcurrent+1 < $hunk->[0]) {
@@ -82,7 +88,7 @@ sub align {
       push @L,[$X->[$Xcurrent],$Y->[$Ycurrent]]; # elements
     }
   }
-  while ($Xcurrent+1 <= $#$X ||  $Ycurrent+1 <= $#$Y ) {
+  while ($align && ($Xcurrent+1 <= $#$X ||  $Ycurrent+1 <= $#$Y) ) {
     $Xtemp = '';
     $Ytemp = '';
     if ($Xcurrent+1 <= $#$X) {
@@ -98,6 +104,142 @@ sub align {
   return \@L;
 }
 
+sub LCSidx { shift->_align2(@_,0) }
+sub align2 { shift->_align2(@_,1) }
+
+sub _align2 {
+  my ($self, $X, $Y, $align) = @_;
+  
+    my ($amin, $amax, $bmin, $bmax) = (0, $#$X, 0, $#$Y);
+
+#if (1) {
+    while ($amin <= $amax and $bmin <= $bmax and $X->[$amin] eq $Y->[$bmin]) {
+        $amin++;
+        $bmin++;
+    }
+    while ($amin <= $amax and $bmin <= $bmax and $X->[$amax] eq $Y->[$bmax]) {
+        $amax--;
+        $bmax--;
+    }
+    #print STDERR '$amin: ',$amin,' $bmin: ',$bmin,' $amax: ', $amax, ' $bmax: ',$bmax,"\n";
+#}
+  
+  my $YPos;
+  my $index;
+  push @{ $YPos->{$_} },$index++ for @$Y[$bmin..$bmax]; # @$b[$bmin..$bmax]
+  
+  #print STDERR '$YPos: ',Dumper($YPos),"\n";
+  
+  
+  my $Xmatches;
+  @$Xmatches = grep { exists( $YPos->{$X->[$amin+$_]} ) } 0..$amax-$amin;
+  #print STDERR '$Xmatches: ',join(' ',@$Xmatches),"\n";
+  
+  my $Xcurrent = -1;
+  my $Ycurrent = -1;
+  my $Xtemp;
+  my $Ytemp;
+  
+  my @L; # LCS
+  my $R = -1;  # records the position of last selected symbol
+  my $i;
+  
+  my $Pi;
+  my $Pi1;
+  
+  #my $align = 1;
+  
+  my $hunk;
+   
+  for ($i = 0; $i <= $#$Xmatches; $i++) {
+    $hunk = undef;
+    $Pi = [ grep {$R < $_ } @{ $YPos->{$X->[$amin+$Xmatches->[$i]]} } ]->[0] //= $bmax+1;
+    $Pi1 = ($i < $#$Xmatches) ? [ grep {$R < $_ } @{ $YPos->{$X->[$amin+$Xmatches->[$i+1]]} } ]->[0] : -1;
+    $Pi1 //=  -1;
+    #print STDERR ' $Pi1: ',$Pi1,' $Pi: ',$Pi,' $i: ',$i,"\n";
+    
+    if ($Pi > $Pi1 && $Pi1 > $R) {
+      $hunk = [$amin+$Xmatches->[$i+1],$bmin+$Pi1];
+      #print STDERR 'hunk: ',$hunk->[0],' ',$hunk->[1],' $Pi1: ',$Pi1,' $i: ',$i,"\n";
+      $R = $Pi1;
+      $i++;
+    } 
+    elsif ($Pi < $bmax) {
+      $hunk = [$amin+$Xmatches->[$i],$bmin+$Pi];
+      #print STDERR 'hunk: ',$hunk->[0],' ',$hunk->[1],' $Pi: ',$Pi,"\n"; 
+      $R = $Pi;
+    }
+
+    if ($hunk) {
+      #print STDERR 'hunk: ',$hunk->[0],' ',$hunk->[1],' $Xcurrent: ',$Xcurrent,' $Ycurrent: ',$Ycurrent,' $i: ',$i,"\n";
+
+      while ($align && ($Xcurrent+1 < $hunk->[0] ||  $Ycurrent+1 < $hunk->[1]) ) {
+        $Xtemp = '';
+        $Ytemp = '';
+        if ($Xcurrent+1 < $hunk->[0]) {
+          $Xcurrent++;
+          $Xtemp = $X->[$Xcurrent];
+        }
+        if ($Ycurrent+1 < $hunk->[1]) {
+          $Ycurrent++;
+          $Ytemp = $Y->[$Ycurrent];
+        }
+        push @L,[$Xtemp,$Ytemp];
+      }
+    
+      $Xcurrent = $hunk->[0];
+      $Ycurrent = $hunk->[1];
+      #push @L,$hunk; # indices
+      push @L,[$X->[$Xcurrent],$Y->[$Ycurrent]]; # elements
+    }
+  }
+  #print STDERR '$Xcurrent: ',$Xcurrent,' $Ycurrent: ',$Ycurrent,"\n";
+
+  #while ($align && ($Xcurrent+1 <= $#$X ||  $Ycurrent+1 <= $#$Y) ) {
+   while ($align && ($Xcurrent+1 <= $amax ||  $Ycurrent+1 <= $bmax) ) {
+   
+    $Xtemp = '';
+    $Ytemp = '';
+    #if ($Xcurrent+1 <= $#$X) {
+    if ($Xcurrent+1 <= $amax) {
+      $Xcurrent++;
+      $Xtemp = $X->[$Xcurrent];
+    }
+    #if ($Ycurrent+1 <= $#$Y) {
+    if ($Ycurrent+1 <= $bmax) {
+      $Ycurrent++;
+      $Ytemp = $Y->[$Ycurrent];
+    }
+    push @L,[$Xtemp,$Ytemp];
+  } 
+  #print STDERR '$Xcurrent: ',$Xcurrent,' $Ycurrent: ',$Ycurrent,"\n";
+
+  while ($align && ($Xcurrent+1 <= $#$X ||  $Ycurrent+1 <= $#$Y) ) {
+   
+    $Xtemp = '';
+    $Ytemp = '';
+    if ($Xcurrent+1 <= $#$X) {
+      $Xcurrent++;
+      $Xtemp = $X->[$Xcurrent];
+    }
+    if ($Ycurrent+1 <= $#$Y) {
+      $Ycurrent++;
+      $Ytemp = $Y->[$Ycurrent];
+    }
+    push @L,[$Xtemp,$Ytemp];
+  }   
+
+  return \@L;
+}
+
+sub sequences2hunks {
+  my $self = shift;
+  my ($a, $b) = @_;
+  
+  return [ map { [ $a->[$_], $b->[$_] ] } 0..$#$a ]; 
+}
+
+
 sub hunks2sequences {
   my $self = shift;
   my $hunks = shift;
@@ -108,8 +250,8 @@ sub hunks2sequences {
   my $b = [];
   
   for my $hunk (@$hunks) {
-     push @$a, $hunk->[0];
-     push @$b, $hunk->[1];
+    push @$a, $hunk->[0];
+    push @$b, $hunk->[1];
   }
   return ($a,$b); 
 }
