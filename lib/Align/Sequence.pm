@@ -104,7 +104,7 @@ sub align {
   return \@L;
 }
 
-sub LCSidx { shift->_align2(@_,0) }
+sub LCSidx { shift->_align3(@_,0) }
 sub align2 { shift->_align2(@_,1) }
 
 sub _align2 {
@@ -164,7 +164,7 @@ sub _align2 {
       $R = $Pi1;
       $i++;
     } 
-    elsif ($Pi < $bmax) {
+    elsif ($Pi <= $bmax) {
       $hunk = [$amin+$Xmatches->[$i],$bmin+$Pi];
       #print STDERR 'hunk: ',$hunk->[0],' ',$hunk->[1],' $Pi: ',$Pi,"\n"; 
       $R = $Pi;
@@ -231,6 +231,70 @@ sub _align2 {
 
   return \@L;
 }
+##################################################
+sub _align3 {
+  my ($self, $X, $Y, $align) = @_;
+  
+    my ($amin, $amax, $bmin, $bmax) = (0, $#$X, 0, $#$Y);
+
+#if (1) {
+    while ($amin <= $amax and $bmin <= $bmax and $X->[$amin] eq $Y->[$bmin]) {
+        $amin++;
+        $bmin++;
+    }
+    while ($amin <= $amax and $bmin <= $bmax and $X->[$amax] eq $Y->[$bmax]) {
+        $amax--;
+        $bmax--;
+    }
+    #print STDERR '$amin: ',$amin,' $bmin: ',$bmin,' $amax: ', $amax, ' $bmax: ',$bmax,"\n";
+#}
+  
+  my $YPos;
+  my $index;
+  push @{ $YPos->{$_} },$index++ for @$Y[$bmin..$bmax]; # @$b[$bmin..$bmax]
+  
+  #print STDERR '$YPos: ',Dumper($YPos),"\n";
+  
+  
+  my $Xmatches;
+  @$Xmatches = grep { exists( $YPos->{$X->[$amin+$_]} ) } 0..$amax-$amin;
+  #print STDERR '$Xmatches: ',join(' ',@$Xmatches),"\n";
+    
+  my @L; # LCS
+  my $R = -1;  # records the position of last selected symbol
+  my $i;
+  
+  my $Pi;
+  my $Pi1;
+  
+  #my $align = 1;
+     
+  for ($i = 0; $i <= $#$Xmatches; $i++) {
+    #$hunk = undef;
+    $Pi = [ grep {$R < $_ } @{ $YPos->{$X->[$amin+$Xmatches->[$i]]} } ]->[0] //= $bmax+1;
+    $Pi1 = ($i < $#$Xmatches) ? [ grep {$R < $_ } @{ $YPos->{$X->[$amin+$Xmatches->[$i+1]]} } ]->[0] : -1;
+    $Pi1 //=  -1;
+    #print STDERR ' $Pi1: ',$Pi1,' $Pi: ',$Pi,' $i: ',$i,"\n";
+    
+    if ($Pi > $Pi1 && $Pi1 > $R) {
+      push @L, [$amin+$Xmatches->[$i+1],$bmin+$Pi1];
+      #print STDERR 'hunk: ',$amin+$Xmatches->[$i+1],' ',$bmin+$Pi1,' $Pi1: ',$Pi1,' $i: ',$i,"\n";
+      $R = $Pi1;
+      $i++;
+    } 
+    elsif ($Pi <= $bmax) {
+      push @L, [$amin+$Xmatches->[$i],$bmin+$Pi];
+      #print STDERR 'hunk: ',$amin+$Xmatches->[$i],' ',$bmin+$Pi,' $Pi: ',$Pi,"\n"; 
+      $R = $Pi;
+    }
+  }
+  #print STDERR '$Xcurrent: ',$Xcurrent,' $Ycurrent: ',$Ycurrent,"\n";
+
+  map([$_ => $_], 0 .. ($amin-1)),
+        @L,
+            map([$_ => ++$bmax], ($amax+1) .. $#$X);
+}
+
 
 sub sequences2hunks {
   my $self = shift;

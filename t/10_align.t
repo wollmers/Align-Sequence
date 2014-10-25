@@ -79,6 +79,7 @@ for my $example ($examples->[4]) {
 }
 }
 
+if (1) {
 for my $example (@$examples) {
 #for my $example ($examples->[14]) {
   my $a = $example->[0];
@@ -94,6 +95,33 @@ for my $example (@$examples) {
   is_deeply([$ra,$rb],[$a, $b],"$a, $b");
   
 }
+}
+
+use Algorithm::LCS;
+my $lcs = Algorithm::LCS->new();
+use Data::Dumper;
+
+if (0) {
+for my $example (@$examples) {
+#for my $example ($examples->[6]) {
+  my $a = $example->[0];
+  my $b = $example->[1];
+  my @a = $a =~ /([^_])/g;
+  my @b = $b =~ /([^_])/g;
+  
+  #print STDERR Dumper([ $object->LCSidx(\@a,\@b) ]),"\n";
+
+  #print STDERR Dumper([ $lcs->LCS(\@a,\@b) ]),"\n";
+
+  is_deeply(
+    [ $object->LCSidx(\@a,\@b) ],
+    [ $lcs->LCS(\@a,\@b) ],
+    "$a, $b"
+  );
+  
+}
+}
+
 
 =comment
 

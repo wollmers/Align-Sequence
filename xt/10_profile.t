@@ -74,4 +74,11 @@ for my $example ($examples->[16]) {
   my $ra = join '', map { $_ ? $_ : '_'} @$sa;
   my $rb = join '', map { $_ ? $_ : '_'} @$sb;  
 }
+for my $example ($examples->[16]) {
+  my $a = $example->[0];
+  my $b = $example->[1];
+  my @a = $a =~ /([^_])/g;
+  my @b = $b =~ /([^_])/g;
+  my $hunks = $object->LCSidx(\@a,\@b);  
+}
 
