@@ -79,9 +79,9 @@ for my $example ($examples->[4]) {
 }
 }
 
-if (1) {
-for my $example (@$examples) {
-#for my $example ($examples->[14]) {
+if (0) {
+#for my $example (@$examples) {
+for my $example ($examples->[1]) {
   my $a = $example->[0];
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;
@@ -101,9 +101,9 @@ use Algorithm::LCS;
 my $lcs = Algorithm::LCS->new();
 use Data::Dumper;
 
-if (0) {
+if (1) {
 for my $example (@$examples) {
-#for my $example ($examples->[6]) {
+#for my $example ($examples->[1]) {
   my $a = $example->[0];
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;

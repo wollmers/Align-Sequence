@@ -150,23 +150,31 @@ if (1) {
   });
 }
   
-if (0) {
+if (1) {
     #cmpthese( 50_000, {
     timethese( 1_000_000, {
   
 
 'binsearch' => sub {  
-  binsearch(1,[0,1,2,3,4,5,6,7,8,9],8);
+  binsearch(1,[0..25],9);
 },
 
 'search' => sub {  
-  search(1,[0,1,2,3,4,5,6,7,8,9],8);
+  search(1,[0..25],9);
  },
 'search2' => sub {  
-  search2(1,[0,1,2,3,4,5,6,7,8,9],8);
+  search2(1,[0..25],9);
  },
 'search3' => sub {  
-  search3(1,[0,1,2,3,4,5,6,7,8,9],8);
+  search3(1,[0..25],9);
+ },
+ 'grep' => sub {
+   [ grep {0 < $_ } 0..2 ]->[0] 
+ },
+ 'for' => sub {
+    for (0..2) {
+      return if 0 < $_ ;
+    }
  },
 
   });
