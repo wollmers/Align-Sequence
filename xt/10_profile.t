@@ -49,7 +49,7 @@ my $examples = [
     '_bcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'],
 ];
 
-if (0) {
+if (1) {
 #for my $example (@$examples) {
 for my $example ($examples->[16]) {
   my $a = $example->[0];

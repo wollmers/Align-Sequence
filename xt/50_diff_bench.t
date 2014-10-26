@@ -87,7 +87,12 @@ if (1) {
         'A_LCS' => sub {
             [ $A_LCS->LCS(@dataL) ]
         },
-
+        'align' => sub {
+            [ $align->align(@dataL) ]
+        },
+        'align2' => sub {
+            [ $align->align2(@dataL) ]
+        },
     });
 }    
 
@@ -106,7 +111,12 @@ if (1) {
         'A_LCS' => sub {
             [ $A_LCS->LCS(@data2) ]
         },
-
+        'align' => sub {
+             $align->align(@data2)
+        },
+        'align2' => sub {
+             $align->align2(@data2)
+        },
     });
 }    
 
@@ -146,6 +156,12 @@ if (1) {
         #},
         'lcs_idx2' => sub {
              $align->LCSidx(@data)
+        },
+        'align' => sub {
+             $align->align(@data)
+        },
+        'align2' => sub {
+             $align->align2(@data)
         },
         'A_LCS' => sub {
             [ $A_LCS->LCS(@data) ]
