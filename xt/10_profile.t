@@ -49,7 +49,7 @@ my $examples = [
     '_bcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'],
 ];
 
-if (1) {
+if (0) {
 #for my $example (@$examples) {
 for my $example ($examples->[16]) {
   my $a = $example->[0];
@@ -64,7 +64,7 @@ for my $example ($examples->[16]) {
 }
 }
 
-if (1) {
+if (0) {
 #for my $example (@$examples) {
 for my $example ($examples->[16]) {
   my $a = $example->[0];
@@ -80,7 +80,7 @@ for my $example ($examples->[16]) {
 }
 
 if (1) {
-for my $example ($examples->[16]) {
+for my $example ($examples->[13]) {
   my $a = $example->[0];
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;

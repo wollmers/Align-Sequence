@@ -15,7 +15,7 @@ sub new {
 }
 
 
-sub LCSidx { shift->_align3(@_,0) }
+sub LCSidx { shift->_align4(@_,0) }
 sub align2 { shift->_align2(@_,1) }
 
 sub align {
@@ -253,7 +253,7 @@ sub _align3 {
       push @$L, [$amin+$Xmatches->[$i],$bmin+$Pi];
       $R = $Pi;
     }
-    while (1 and@$L and $L->[-1][0]+1 <= $amax and $L->[-1][1]+1 <= $bmax and $X->[$L->[-1][0]+1] eq $Y->[$L->[-1][1]+1]) {    
+    while (1 and @$L and $L->[-1][0]+1 <= $amax and $L->[-1][1]+1 <= $bmax and $X->[$L->[-1][0]+1] eq $Y->[$L->[-1][1]+1]) {    
       $i++;
       $R++;
       #push @$L, [ $L->[-1][0]+1, $L->[-1][0]+1 ]; # seems slower
@@ -266,7 +266,95 @@ sub _align3 {
     @$L,
       map([$_ => ++$bmax], ($amax+1) .. $#$X);
 }
+#################################
+sub _align4 {
+  my $self     = shift;
+  my $a        = shift;    
+  my $b        = shift;    
 
+    
+  my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
+
+if (1) {
+  while ($amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
+    $amin++;
+    $bmin++;
+  }
+  while ($amin <= $amax and $bmin <= $bmax and $a->[$amax] eq $b->[$bmax]) {
+    $amax--;
+    $bmax--;
+  }
+  #print '($amin, $amax, $bmin, $bmax): ',join(' ',($amin, $amax, $bmin, $bmax)),"\n";
+}
+
+  
+
+  my $bMatches;
+  my $index;
+  unshift @{ $bMatches->{$_} },$index++ for @$b[$bmin..$bmax]; # @$b[$bmin..$bmax]
+    
+  #my $aMatches;
+  #@$aMatches = grep { exists( $bMatches->{$a->[$amin+$_]} ) } 0..$amax-$amin;
+
+  my $matchVector = [];
+
+  my $thresh = [];
+  my $links  = [];
+
+  my ( $i, $ai, $j, $k );
+  for ( $i = $amin ; $i <= $amax ; $i++ ) {
+    $ai = $a->[$i];
+    # the matching token
+    if ( exists( $bMatches->{$ai} ) ) {
+      $k = 0;
+      for $j ( @{ $bMatches->{$ai} } ) {
+        # optimization: most of the time this will be true
+        if ( $k and $thresh->[$k] > $j and $thresh->[ $k - 1 ] < $j ) {
+            $thresh->[$k] = $j;
+        }
+        else {
+          $k = _replaceNextLargerWith( $thresh, $j, $k );
+          #$k = _search( $thresh, $j, $k );
+        }
+        if (defined $k) {
+          $links->[$k] = [ ( $k ? $links->[ $k - 1 ] : undef ), $i, $j ];
+        }
+      }
+    }
+  }
+
+  if (@$thresh) {
+    for ( my $link = $links->[$#$thresh] ; $link ; $link = $link->[0] ) {
+      #print '$link: ',Dumper($link),"\n";
+      #$matchVector->[ $link->[1] ] = $link->[2];
+      $matchVector->[ $link->[1] ] = [$link->[1],$link->[2]+$bmin] if (defined $link->[2]);
+    }
+  }
+
+  
+  my $L = [ 
+    map([$_ => $_], 0 .. ($amin-1)),
+    grep { defined $_ } @$matchVector,
+    map([$_ => ++$bmax], ($amax+1) .. $#$a)
+  ];
+  if (0) {
+    print '$bMatches: ',Dumper($bMatches),"\n";
+    print '$thresh: ',Dumper($thresh),"\n";
+    print '$links: ',Dumper($links),"\n";
+    print '$matchVector: ',Dumper($matchVector),"\n";
+    print '$L: ',Dumper($L),"\n";
+  }  
+
+if (0) {
+  for my $hunk (@$L) {
+  
+  }
+}  
+  #my $L = [ grep { defined $_ } @$matchVector ];
+  return $L;
+}
+
+#################################
 sub sequences2hunks {
   my $self = shift;
   my ($a, $b) = @_;
@@ -291,6 +379,50 @@ sub hunks2sequences {
   return ($a,$b); 
 }
 
+sub _replaceNextLargerWith {
+    my ( $thresh, $j, $high ) = @_;
+    $high ||= $#$thresh;
+
+    # off the end?
+    if ( $high == -1 || $j > $thresh->[-1] ) {
+        push ( @$thresh, $j );
+        return $high + 1;
+    }
+    # binary search for insertion point...
+    my $low = 0;
+    my $index;
+    my $found;
+    while ( $low <= $high ) {
+        use integer;
+        $index = ( $high + $low ) / 2;
+        #$index = int(( $high + $low ) / 2);  # without 'use integer'
+        $found = $thresh->[$index];
+        if ( $j == $found ) { return undef; }
+        elsif ( $j > $found ) { $low = $index + 1; }
+        else { $high = $index - 1; }
+    }
+    # now insertion point is in $low.
+    $thresh->[$low] = $j;    # overwrite next larger
+    return $low;
+}
+
+sub _search {
+  my ( $thresh, $j, $high ) = @_;
+  $high ||= $#$thresh;
+
+  if ( $high == -1 || $j > $thresh->[-1] ) {
+        push ( @$thresh, $j );
+        return $high + 1;
+  } 
+  
+  for my $k (0..$#$thresh) {
+    if ( $j == $thresh->[$k] ) { return undef; }
+    elsif ( $k and $thresh->[$k] > $j and $thresh->[ $k - 1 ] < $j) { 
+      $thresh->[$k] = $j;
+      return $k; 
+    }
+  }
+}
 
 1;
 __END__

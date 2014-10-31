@@ -25,6 +25,8 @@ ok($class->new());
 }
 
 my $examples = [
+  ['ttatc__cg',
+   '__agcaact'],
   ['abcabba_',
    'cb_ab_ac'],
   [ 'rrp',
@@ -61,7 +63,7 @@ my $examples = [
     '_bcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'],
 ];
 
-if (1) {
+if (0) {
 for my $example (@$examples) {
 #for my $example ($examples->[4]) {
   my $a = $example->[0];
@@ -97,11 +99,29 @@ for my $example ($examples->[1]) {
 }
 }
 
+if (0) {
+#for my $example (@$examples) {
+for my $example ($examples->[1]) {
+  my $a = $example->[0];
+  my $b = $example->[1];
+  my @a = $a =~ /([^_])/g;
+  my @b = $b =~ /([^_])/g;
+  my $hunks = $object->align4(\@a,\@b);
+  
+  my ($sa,$sb) = $object->hunks2sequences($hunks);
+  my $ra = join '', map { $_ ? $_ : '_'} @$sa;
+  my $rb = join '', map { $_ ? $_ : '_'} @$sb;
+
+  is_deeply([$ra,$rb],[$a, $b],"$a, $b");
+  
+}
+}
+
 use Algorithm::LCS;
 my $lcs = Algorithm::LCS->new();
 use Data::Dumper;
 
-if (0) {
+if (1) {
 for my $example (@$examples) {
 #for my $example ($examples->[1]) {
   my $a = $example->[0];
@@ -114,7 +134,7 @@ for my $example (@$examples) {
   #print STDERR Dumper([ $lcs->LCS(\@a,\@b) ]),"\n";
 
   is_deeply(
-    [ $object->LCSidx(\@a,\@b) ],
+    $object->LCSidx(\@a,\@b) ,
     [ $lcs->LCS(\@a,\@b) ],
     "$a, $b"
   );
