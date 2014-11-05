@@ -228,74 +228,114 @@ sub _search {
 
 sub basic_llcs {
 
-my ($X,$Y) = @_;
+  my ($self,$X,$Y) = @_;
 
-     if (scalar @$Y.length() > X.length())
-        swap(X,Y);
-     int m = X.length(),n=Y.length();
-     vector< vector<int> > c(2, vector<int>(n+1,0));
-     int i,j;
-     for (i=1;i<=m;i++)
-     {
-         for (j=1;j<=n;j++)
-         {
-             if (X[i-1]==Y[j-1])
-                c[1][j]=c[0][j-1]+1;
-             else
-                 c[1][j]=max(c[1][j-1],c[0][j]);
-         }
-         for (j=1;j<=n;j++)
-             c[0][j]=c[1][j];
-     }
-     return (c[1][n]);
-}
+  if (scalar @$Y > scalar @$X) {
+    my $temp = $X;
+    $X = $Y;
+    $Y = $temp;
+  }
+
+  my $m = scalar @$X;
+  my $n = scalar @$Y;
+    # vector< vector<int> > c(2, vector<int>(n+1,0));
+    
+  my $c = [];
+  
+  for my $i (0..1) {
+    for my $j (0..$n) {
+      $c->[$i][$j]=0;
+    }
+  }
+  
+  #print '$c: ',Dumper($c),"\n";
+  my ($i,$j);
+
+  for ($i=1; $i <= $m; $i++) {
+    for ($j=1; $j <= $n; $j++) {
+      if ($X->[$i-1] eq $Y->[$j-1]) { 
+        $c->[1][$j] = $c->[0][$j-1]+1;
+      }
+      else {
+        $c->[1][$j] = max($c->[1][$j-1],$c->[0][$j]);
+      }
+    }
+    for ($j = 1; $j <= $n; $j++) {
+      $c->[0][$j] = $c->[1][$j];
+    }
+  }
+  #print '$c: ',Dumper($c),"\n";
+  #print 'llcs: ',$c->[1][$n],"\n";
+  return ($c->[1][$n]);
 }
 
 sub basic_lcs {
-  my ($X,$Y) = @_;
+  my ($self,$X,$Y) = @_;
 
   my $m = scalar @$X;
   my $n = scalar @$Y;
  
   my $c = [];
   my ($i,$j);
-  for ($i=0;$i<=$m;$i++)
+  for ($i=0;$i<=$m;$i++) {
     for ($j=0;$j<=$n;$j++) {
-             $c[$i][$j]=0;
+             $c->[$i][$j]=0;
     }
   }
   for ($i=1;$i<=$m;$i++) {
     for ($j=1;$j<=$n;$j++) {
-      if ($X[$i-1] eq $Y[$j-1]) {
-        $c[$i][$j]=$c[$i-1][$j-1]+1;
+      if ($X->[$i-1] eq $Y->[$j-1]) {
+        $c->[$i][$j] = $c->[$i-1][$j-1]+1;
       }
       else {
-        $c[$i][$j]= max($c[$i][$j-1],$c[$i-1][$j]);
+        $c->[$i][$j] = max($c->[$i][$j-1], $c->[$i-1][$j]);
       }
     }
   }
-  return $c;
-
+  #return $c;
+  #print '$c: ',Dumper($c),"\n";
+  #print '$X: ',Dumper($X),"\n";
+  if (1 && ($m < 20)) {
+    print '    ',join(' ',@$Y),"\n";
+    print '  ';
+    for my $j (0..$n) { my $a = $c->[0][$j]; print $a,' ';}
+    print "\n";
+    for ($i=1;$i<=$m;$i++) {
+      my $x = $X->[$i-1];print $x,' ';
+      for my $j (0..$n) { my $a = $c->[$i][$j]; print $a,' ';}
+      print "\n";
+    }
+  }
+  
+  my $L = [];
+  $L = $self->print_lcs($X,$Y,$c,$m,$n,$L);
+  #print '$L: ',Dumper($L),"\n";
+  return $L;
 }
 
 sub max {
-  $_[0] > $_[1] ? $_[0] : $_[1]
+  ($_[0] > $_[1]) ? $_[0] : $_[1];
 }
 
 sub print_lcs {
-  my ($X,$Y,$c,$i,$j) = @_;
+  my ($self,$X,$Y,$c,$i,$j,$L) = @_;
 
-    if ($i==0 || $j==0) {return; }
-    if ($X[$i-1] eq $Y[$j-1]) {
-       print_lcs($X,$Y,$c,$i-1,$j-1);
-       print $X[$i-1];
-    }
-    elsif ($c[$i][$j] eq $c[$i-1][$j]) {
-      print_lcs($X,$Y,$c,$i-1,$j);
-    }
-    else {
-      print_lcs($X,$Y,$c,$i,$j-1);
-    }
+  #print '$i: ',$i,' $j: ',$j,"\n";
+  #print '$L: ',Dumper($L),"\n";
+
+  if ($i==0 || $j==0) { return $L; }
+  if ($X->[$i-1] eq $Y->[$j-1]) {
+       $L = $self->print_lcs($X,$Y,$c,$i-1,$j-1,$L);
+       #print $X->[$i-1];
+       push @{$L},[$i-1,$j-1];
+  }
+  elsif ($c->[$i][$j] eq $c->[$i-1][$j]) {
+      $L = $self->print_lcs($X,$Y,$c,$i-1,$j,$L);
+  }
+  else {
+      $L = $self->print_lcs($X,$Y,$c,$i,$j-1,$L);
+  }
+  return $L;
 }
 
 1;
