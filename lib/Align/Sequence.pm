@@ -229,8 +229,8 @@ sub _search {
 sub basic_llcs {
 
 my ($X,$Y) = @_;
-{
-     if (Y.length() > X.length())
+
+     if (scalar @$Y.length() > X.length())
         swap(X,Y);
      int m = X.length(),n=Y.length();
      vector< vector<int> > c(2, vector<int>(n+1,0));
