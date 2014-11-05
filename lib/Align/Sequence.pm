@@ -338,6 +338,23 @@ sub print_lcs {
   return $L;
 }
 
+=comment
+
+  function backtrackAll(C[0..m,0..n], X[1..m], Y[1..n], i, j)
+  if i = 0 or j = 0
+    return {""}
+    else if X[i] = Y[j]
+    return {Z + X[i] for all Z in backtrackAll(C, X, Y, i-1, j-1)}
+   else
+    R := {}
+    if C[i,j-1] ≥ C[i-1,j]
+        R := backtrackAll(C, X, Y, i, j-1)
+    if C[i-1,j] ≥ C[i,j-1]
+        R := R ∪ backtrackAll(C, X, Y, i-1, j)
+    return R
+
+=cut
+
 1;
 __END__
 
