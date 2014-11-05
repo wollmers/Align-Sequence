@@ -16,79 +16,63 @@ sub new {
 
 
 sub LCSidx { shift->_align4(@_,0) }
-sub align2 { shift->_align3(@_,1) }
+sub align2 { shift->align(@_,1) }
 
 ##################################################
-sub _align3 {
-  my ($self, $X, $Y, $align) = @_;
-  
-  my ($amin, $amax, $bmin, $bmax) = (0, $#$X, 0, $#$Y);
+sub align {
+  my ($self, $X, $Y) = @_;
 
-  while ($amin <= $amax and $bmin <= $bmax and $X->[$amin] eq $Y->[$bmin]) {
-    $amin++;
-    $bmin++;
-  }
-  while ($amin <= $amax and $bmin <= $bmax and $X->[$amax] eq $Y->[$bmax]) {
-    $amax--;
-    $bmax--;
-  }
+  #my $LCS = [$self->_align3($X, $Y)];
   
-  my $YPos;
-  my $index;
-  push @{ $YPos->{$_} },$index++ for @$Y[$bmin..$bmax]; # @$b[$bmin..$bmax]
-    
-  my $Xmatches;
-  @$Xmatches = grep { exists( $YPos->{$X->[$amin+$_]} ) } 0..$amax-$amin;
-    
-  my $L = []; # LCS
-  my $R = -1;  # records the position of last selected symbol
-  my $i;
+  my $hunks = [];
   
-  my $Pi;
-  my $Pi1;
+  my $Xcurrent = -1;
+  my $Ycurrent = -1;
+  my $Xtemp;
+  my $Ytemp;
   
-  for ($i = 0; $i <= $#$Xmatches; $i++) {
-    #$Pi = [ grep {$R < $_ } @{ $YPos->{$X->[$amin+$Xmatches->[$i]]} } ]->[0] //= $bmax+1;
-    $Pi = $bmax+1;
-    for (@{ $YPos->{$X->[$amin+$Xmatches->[$i]]} }) {
-      if ($R < $_) {
-        $Pi = $_;
-        last;
-      }
-    }
-    #$Pi1 = ($i < $#$Xmatches) ? [ grep {$R < $_ } @{ $YPos->{$X->[$amin+$Xmatches->[$i+1]]} } ]->[0] : -1;
-    $Pi1 =  -1;
-    if ($i < $#$Xmatches) {
-      for (@{ $YPos->{$X->[$amin+$Xmatches->[$i+1]]} }) {
-        if ($R < $_) {
-          $Pi1 = $_;
-          last;
+  #for my $hunk (@$LCS) {
+  for my $hunk ( @{ $self->_align4($X, $Y) } ) {
+    #if ($hunk) {
+      #print STDERR 'hunk: ',$hunk->[0],' ',$hunk->[1],' $Xcurrent: ',$Xcurrent,' $Ycurrent: ',$Ycurrent,' $i: ',$i,"\n";
+
+      while ( ($Xcurrent+1 < $hunk->[0] ||  $Ycurrent+1 < $hunk->[1]) ) {
+        $Xtemp = '';
+        $Ytemp = '';
+        if ($Xcurrent+1 < $hunk->[0]) {
+          $Xcurrent++;
+          $Xtemp = $X->[$Xcurrent];
         }
+        if ($Ycurrent+1 < $hunk->[1]) {
+          $Ycurrent++;
+          $Ytemp = $Y->[$Ycurrent];
+        }
+        push @$hunks,[$Xtemp,$Ytemp];
       }
-    }
     
-    if ($Pi > $Pi1 && $Pi1 > $R) {
-      push @$L, [$amin+$Xmatches->[$i+1],$bmin+$Pi1];
-      $R = $Pi1;
-      $i++;
-    } 
-    elsif ($Pi <= $bmax) {
-      push @$L, [$amin+$Xmatches->[$i],$bmin+$Pi];
-      $R = $Pi;
-    }
-    while (1 and @$L and $L->[-1][0]+1 <= $amax and $L->[-1][1]+1 <= $bmax and $X->[$L->[-1][0]+1] eq $Y->[$L->[-1][1]+1]) {    
-      $i++;
-      $R++;
-      #push @$L, [ $L->[-1][0]+1, $L->[-1][0]+1 ]; # seems slower
-      push @$L, [$amin+$Xmatches->[$i],$bmin+$R];
-    }    
+      $Xcurrent = $hunk->[0];
+      $Ycurrent = $hunk->[1];
+      push @$hunks,[$X->[$Xcurrent],$Y->[$Ycurrent]]; # elements
+    #}    
   }
-
-  #print Dumper($L), "\n";
-  map([$_ => $_], 0 .. ($amin-1)),
-    @$L,
-      map([$_ => ++$bmax], ($amax+1) .. $#$X);
+  while ( ($Xcurrent+1 <= $#$X ||  $Ycurrent+1 <= $#$Y) ) {
+   
+    $Xtemp = '';
+    $Ytemp = '';
+    if ($Xcurrent+1 <= $#$X) {
+      $Xcurrent++;
+      $Xtemp = $X->[$Xcurrent];
+    }
+    if ($Ycurrent+1 <= $#$Y) {
+      $Ycurrent++;
+      $Ytemp = $Y->[$Ycurrent];
+    }
+    push @$hunks,[$Xtemp,$Ytemp];
+  }
+  return $hunks; 
 }
+
+
 #################################
 sub _align4 {
   my $self     = shift;
@@ -160,7 +144,7 @@ if (1) {
     grep { defined $_ } @$matchVector,
     map([$_ => ++$bmax], ($amax+1) .. $#$a)
   ];
-  if (0) {
+  if (1) {
     print '$bMatches: ',Dumper($bMatches),"\n";
     print '$thresh: ',Dumper($thresh),"\n";
     print '$links: ',Dumper($links),"\n";
@@ -168,11 +152,6 @@ if (1) {
     print '$L: ',Dumper($L),"\n";
   }  
 
-if (0) {
-  for my $hunk (@$L) {
-  
-  }
-}  
   #my $L = [ grep { defined $_ } @$matchVector ];
   return $L;
 }
@@ -245,6 +224,78 @@ sub _search {
       return $k; 
     }
   }
+}
+
+sub basic_llcs {
+
+my ($X,$Y) = @_;
+{
+     if (Y.length() > X.length())
+        swap(X,Y);
+     int m = X.length(),n=Y.length();
+     vector< vector<int> > c(2, vector<int>(n+1,0));
+     int i,j;
+     for (i=1;i<=m;i++)
+     {
+         for (j=1;j<=n;j++)
+         {
+             if (X[i-1]==Y[j-1])
+                c[1][j]=c[0][j-1]+1;
+             else
+                 c[1][j]=max(c[1][j-1],c[0][j]);
+         }
+         for (j=1;j<=n;j++)
+             c[0][j]=c[1][j];
+     }
+     return (c[1][n]);
+}
+}
+
+sub basic_lcs {
+  my ($X,$Y) = @_;
+
+  my $m = scalar @$X;
+  my $n = scalar @$Y;
+ 
+  my $c = [];
+  my ($i,$j);
+  for ($i=0;$i<=$m;$i++)
+    for ($j=0;$j<=$n;$j++) {
+             $c[$i][$j]=0;
+    }
+  }
+  for ($i=1;$i<=$m;$i++) {
+    for ($j=1;$j<=$n;$j++) {
+      if ($X[$i-1] eq $Y[$j-1]) {
+        $c[$i][$j]=$c[$i-1][$j-1]+1;
+      }
+      else {
+        $c[$i][$j]= max($c[$i][$j-1],$c[$i-1][$j]);
+      }
+    }
+  }
+  return $c;
+
+}
+
+sub max {
+  $_[0] > $_[1] ? $_[0] : $_[1]
+}
+
+sub print_lcs {
+  my ($X,$Y,$c,$i,$j) = @_;
+
+    if ($i==0 || $j==0) {return; }
+    if ($X[$i-1] eq $Y[$j-1]) {
+       print_lcs($X,$Y,$c,$i-1,$j-1);
+       print $X[$i-1];
+    }
+    elsif ($c[$i][$j] eq $c[$i-1][$j]) {
+      print_lcs($X,$Y,$c,$i-1,$j);
+    }
+    else {
+      print_lcs($X,$Y,$c,$i,$j-1);
+    }
 }
 
 1;
