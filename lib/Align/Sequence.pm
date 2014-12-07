@@ -23,19 +23,16 @@ sub align {
   my ($self, $X, $Y) = @_;
 
   #my $LCS = [$self->_align3($X, $Y)];
-  
+
   my $hunks = [];
-  
+
   my $Xcurrent = -1;
   my $Ycurrent = -1;
   my $Xtemp;
   my $Ytemp;
-  
+
   #for my $hunk (@$LCS) {
   for my $hunk ( @{ $self->_align4($X, $Y) } ) {
-    #if ($hunk) {
-      #print STDERR 'hunk: ',$hunk->[0],' ',$hunk->[1],' $Xcurrent: ',$Xcurrent,' $Ycurrent: ',$Ycurrent,' $i: ',$i,"\n";
-
       while ( ($Xcurrent+1 < $hunk->[0] ||  $Ycurrent+1 < $hunk->[1]) ) {
         $Xtemp = '';
         $Ytemp = '';
@@ -49,14 +46,13 @@ sub align {
         }
         push @$hunks,[$Xtemp,$Ytemp];
       }
-    
+
       $Xcurrent = $hunk->[0];
       $Ycurrent = $hunk->[1];
       push @$hunks,[$X->[$Xcurrent],$Y->[$Ycurrent]]; # elements
-    #}    
   }
   while ( ($Xcurrent+1 <= $#$X ||  $Ycurrent+1 <= $#$Y) ) {
-   
+
     $Xtemp = '';
     $Ytemp = '';
     if ($Xcurrent+1 <= $#$X) {
@@ -69,17 +65,17 @@ sub align {
     }
     push @$hunks,[$Xtemp,$Ytemp];
   }
-  return $hunks; 
+  return $hunks;
 }
 
 
 #################################
 sub _align4 {
   my $self     = shift;
-  my $a        = shift;    
-  my $b        = shift;    
+  my $a        = shift;
+  my $b        = shift;
 
-    
+
   my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
 
 if (1) {
@@ -94,12 +90,12 @@ if (1) {
   #print '($amin, $amax, $bmin, $bmax): ',join(' ',($amin, $amax, $bmin, $bmax)),"\n";
 }
 
-  
+
 
   my $bMatches;
   my $index;
   unshift @{ $bMatches->{$_} },$index++ for @$b[$bmin..$bmax]; # @$b[$bmin..$bmax]
-    
+
   #my $aMatches;
   #@$aMatches = grep { exists( $bMatches->{$a->[$amin+$_]} ) } 0..$amax-$amin;
 
@@ -138,8 +134,8 @@ if (1) {
     }
   }
 
-  
-  my $L = [ 
+
+  my $L = [
     map([$_ => $_], 0 .. ($amin-1)),
     grep { defined $_ } @$matchVector,
     map([$_ => ++$bmax], ($amax+1) .. $#$a)
@@ -150,7 +146,7 @@ if (1) {
     print '$links: ',Dumper($links),"\n";
     print '$matchVector: ',Dumper($matchVector),"\n";
     print '$L: ',Dumper($L),"\n";
-  }  
+  }
 
   #my $L = [ grep { defined $_ } @$matchVector ];
   return $L;
@@ -160,25 +156,25 @@ if (1) {
 sub sequences2hunks {
   my $self = shift;
   my ($a, $b) = @_;
-  
-  return [ map { [ $a->[$_], $b->[$_] ] } 0..$#$a ]; 
+
+  return [ map { [ $a->[$_], $b->[$_] ] } 0..$#$a ];
 }
 
 
 sub hunks2sequences {
   my $self = shift;
   my $hunks = shift;
-  
+
   my $gap = '';
 
   my $a = [];
   my $b = [];
-  
+
   for my $hunk (@$hunks) {
     push @$a, $hunk->[0];
     push @$b, $hunk->[1];
   }
-  return ($a,$b); 
+  return ($a,$b);
 }
 
 sub _replaceNextLargerWith {
@@ -215,13 +211,13 @@ sub _search {
   if ( $high == -1 || $j > $thresh->[-1] ) {
         push ( @$thresh, $j );
         return $high + 1;
-  } 
-  
+  }
+
   for my $k (0..$#$thresh) {
     if ( $j == $thresh->[$k] ) { return undef; }
-    elsif ( $k and $thresh->[$k] > $j and $thresh->[ $k - 1 ] < $j) { 
+    elsif ( $k and $thresh->[$k] > $j and $thresh->[ $k - 1 ] < $j) {
       $thresh->[$k] = $j;
-      return $k; 
+      return $k;
     }
   }
 }
@@ -239,21 +235,21 @@ sub basic_llcs {
   my $m = scalar @$X;
   my $n = scalar @$Y;
     # vector< vector<int> > c(2, vector<int>(n+1,0));
-    
+
   my $c = [];
-  
+
   for my $i (0..1) {
     for my $j (0..$n) {
       $c->[$i][$j]=0;
     }
   }
-  
+
   #print '$c: ',Dumper($c),"\n";
   my ($i,$j);
 
   for ($i=1; $i <= $m; $i++) {
     for ($j=1; $j <= $n; $j++) {
-      if ($X->[$i-1] eq $Y->[$j-1]) { 
+      if ($X->[$i-1] eq $Y->[$j-1]) {
         $c->[1][$j] = $c->[0][$j-1]+1;
       }
       else {
@@ -274,7 +270,7 @@ sub basic_lcs {
 
   my $m = scalar @$X;
   my $n = scalar @$Y;
- 
+
   my $c = [];
   my ($i,$j);
   for ($i=0;$i<=$m;$i++) {
@@ -306,11 +302,14 @@ sub basic_lcs {
       print "\n";
     }
   }
-  
-  my $L = [];
-  $L = $self->print_lcs($X,$Y,$c,$m,$n,$L);
-  #print '$L: ',Dumper($L),"\n";
-  return $L;
+
+  #my $L = [];
+  #my @R = $self->print_lcs($X,$Y,$c,$m,$n);
+  #my @R = $self->backtrackAll($X,$Y,$c,$m,$n);
+  my $path = $self->greenberg($X,$Y,$c,$m,$n);
+  return $path;
+  #print '@R: ',Dumper(\@R),"\n";
+  #return @R;
 }
 
 sub max {
@@ -320,16 +319,13 @@ sub max {
 sub print_lcs {
   my ($self,$X,$Y,$c,$i,$j,$L) = @_;
 
-  #print '$i: ',$i,' $j: ',$j,"\n";
-  #print '$L: ',Dumper($L),"\n";
-
-  if ($i==0 || $j==0) { return $L; }
+  if ($i==0 || $j==0) { return ([]); }
   if ($X->[$i-1] eq $Y->[$j-1]) {
        $L = $self->print_lcs($X,$Y,$c,$i-1,$j-1,$L);
        #print $X->[$i-1];
        push @{$L},[$i-1,$j-1];
   }
-  elsif ($c->[$i][$j] eq $c->[$i-1][$j]) {
+  elsif ($c->[$i][$j] == $c->[$i-1][$j]) {
       $L = $self->print_lcs($X,$Y,$c,$i-1,$j,$L);
   }
   else {
@@ -338,22 +334,232 @@ sub print_lcs {
   return $L;
 }
 
+
+sub wollmersAll {
+  my ($self,$ranks,$rank,$max) = @_;
+
+  my $R;
+  if ($rank > $max) {return [[]]} # no matches
+  if ($rank == $max) {
+    return [ map { [$_] } @{$ranks->{$rank}} ];
+  }
+
+  my $tails = $self->wollmersAll($ranks,$rank+1,$max);
+  for my $tail (@$tails) {
+    for my $hunk (@{$ranks->{$rank}}) {
+      if (($tail->[0][0] > $hunk->[0]) && ($tail->[0][1] > $hunk->[1])) {
+        push @$R,[$hunk,@$tail];
+      }
+    }
+  }
+  return $R;
+}
+
+# get all LCS of two arrays
+# records the matches by rank
+sub wollmers {
+  my ($self,$X,$Y) = @_;
+
+  my $m = scalar @$X;
+  my $n = scalar @$Y;
+
+  my $ranks = {}; # e.g. '4' => [[3,6],[4,5]]
+  my $c = [];
+  my ($i,$j);
+
+  for (0..$m) {$c->[$_][0]=0;}
+  for (0..$n) {$c->[0][$_]=0;}
+  for ($i=1;$i<=$m;$i++) {
+    for ($j=1;$j<=$n;$j++) {
+      if ($X->[$i-1] eq $Y->[$j-1]) {
+        $c->[$i][$j] = $c->[$i-1][$j-1]+1;
+        push @{$ranks->{$c->[$i][$j]}},[$i-1,$j-1];
+      }
+      else {
+        $c->[$i][$j] = ($c->[$i][$j-1] > $c->[$i-1][$j])
+                         ? $c->[$i][$j-1]
+                         : $c->[$i-1][$j];
+      }
+    }
+  }
+  my $max = scalar keys %$ranks;
+  return $self->wollmersAll($ranks,1,$max);
+}
+
+
+sub max3 {
+  ( ($_[1] > $_[2])
+    ? (($_[1] >= $_[3]) ? $_[1] : $_[3])
+    : (($_[2] >= $_[3]) ? $_[2] : $_[3])
+  )
+}
+
+sub score {
+  #print STDERR $_[0],$_[1],"\n";
+  ($_[1] eq $_[2]) ? 1 : 0
+}
+
+sub needleman_wunsch {
+
 =comment
 
-  function backtrackAll(C[0..m,0..n], X[1..m], Y[1..n], i, j)
-  if i = 0 or j = 0
-    return {""}
-    else if X[i] = Y[j]
-    return {Z + X[i] for all Z in backtrackAll(C, X, Y, i-1, j-1)}
-   else
-    R := {}
-    if C[i,j-1] ≥ C[i-1,j]
-        R := backtrackAll(C, X, Y, i, j-1)
-    if C[i-1,j] ≥ C[i,j-1]
-        R := R ∪ backtrackAll(C, X, Y, i-1, j)
-    return R
+calculating the F matrix
+
+for i=0 to length(A)
+  F(i,0) ← d*i
+for j=0 to length(B)
+  F(0,j) ← d*j
+for i=1 to length(A)
+  for j=1 to length(B) {
+    Match ← F(i-1,j-1) + S(Ai, Bj)
+    Delete ← F(i-1, j) + d
+    Insert ← F(i, j-1) + d
+    F(i,j) ← max(Match, Insert, Delete)
+  }
 
 =cut
+
+  my ($self,$X,$Y) = @_;
+
+  #my $score = sub { ($_[0] eq $_[1]) ? 1 : 0 };
+  my $d = 0; # gap penalty
+
+  my $m = scalar @$X;
+  my $n = scalar @$Y;
+
+  my $c = [];
+  my ($i,$j);
+  for ($i=0;$i<=$m;$i++) {
+    $c->[$i][0] = $d*$i;
+  }
+  for ($j=0;$j<=$n;$j++) {
+    $c->[0][$j] = $d*$j;
+  }
+  for ($i=1;$i<=$m;$i++) {
+    for ($j=1;$j<=$n;$j++) {
+      #print STDERR '$i: ',$i,' $j: ',$j,"\n";
+      my $match  = $c->[$i-1][$j-1] + $self->score($X->[$i-1],$Y->[$j-1]);
+      my $delete = $c->[$i-1][$j] + $d;
+      my $insert = $c->[$i][$j-1] + $d;
+      $c->[$i][$j] = $self->max3($match, $insert, $delete);
+    }
+  }
+
+  $self->print_matrix($X,$Y,$m,$n,$c) if (1);
+
+=comment
+
+AlignmentA ← ""
+AlignmentB ← ""
+i ← length(A)
+j ← length(B)
+while (i > 0 or j > 0) {
+  if (i > 0 and j > 0 and F(i,j) == F(i-1,j-1) + S(Ai, Bj)) {
+    AlignmentA ← Ai + AlignmentA
+    AlignmentB ← Bj + AlignmentB
+    i ← i - 1
+    j ← j - 1
+  }
+  else if (i > 0 and F(i,j) == F(i-1,j) + d) {
+    AlignmentA ← Ai + AlignmentA
+    AlignmentB ← "-" + AlignmentB
+    i ← i - 1
+  }
+  else (j > 0 and F(i,j) == F(i,j-1) + d) {
+    AlignmentA ← "-" + AlignmentA
+    AlignmentB ← Bj + AlignmentB
+    j ← j - 1
+  }
+}
+
+=cut
+
+  my $align_a = '';
+  my $align_b = '';
+
+  $i = scalar @$X;
+  $j = scalar @$Y;
+
+while ($i > 0 || $j > 0) {
+  if ($i > 0 && $j > 0 && ($c->[$i][$j] == ($c->[$i-1][$j-1] + $self->score($X->[$i-1],$Y->[$j-1])) )) {
+    $align_a = $X->[$i-1] . $align_a;
+    $align_b = $Y->[$j-1] . $align_b;
+    $i--;
+    $j--;
+  }
+  elsif ($i > 0 && $c->[$i][$j] == ($c->[$i-1][$j] + $d)) {
+    $align_a = $X->[$i-1] . $align_a;
+    $align_b = "_" . $align_b;
+    $i--;
+  }
+  elsif ($j > 0 && $c->[$i][$j] == $c->[$i][$j-1] + $d) {
+    $align_a = "_" . $align_a;
+    $align_b = $Y->[$j-1] . $align_b;
+    $j--;
+  }
+}
+  print STDERR $align_a,"\n",$align_b,"\n";
+  return $align_a, $align_b;
+
+}
+
+sub print_matrix {
+  my ($self,$X,$Y,$m,$n,$c) = @_;
+
+  if (1 && ($m < 20)) {
+    print join('',map { sprintf('%4s',$_) } '','','',1..$n),"\n";
+    print join('',map { sprintf('%4s',$_) } '','','',@$Y),"\n";
+    print join('',map { sprintf('%4s',$_) } '','');
+    for my $j (0..$n) { my $a = $c->[0][$j]; print sprintf('%4s',$a);}
+    print "\n";
+    my $i;
+    for ($i=1;$i<=$m;$i++) {
+      my $x = $X->[$i-1];print join('',map { sprintf('%4s',$_) } ($i,$x));
+      for my $j (0..$n) { my $a = $c->[$i][$j]; print sprintf('%4s',$a);}
+      print "\n";
+    }
+  }
+
+}
+
+
+sub lcs_greedy {
+    my ($self,$x,$y) = @_;
+
+    print STDERR '$x: ',$x,' $y: ',$y,"\n";
+    my $r = 0;
+    my $p = 0;
+    my $p1;
+    my $L = '';
+    my $idx;
+	my $m = length($x);
+	my $n = length($y);
+	my $i;
+
+	$p1 = $self->popsym(0,$x,$r,$y,$n);
+	for ($i=0;$i < $m;$i++) {
+		$p = ($r == $p) ? $p1 : $self->popsym($i,$x,$r,$y,$n);
+		$p1 = $self->popsym($i+1,$x,$r,$y,$n);
+		if ($p > $p1) {$i++; $idx = $p1; }
+		else {$idx = $p;}
+		if ($idx == $n) { $p = $self->popsym($i,$x,$r,$y,$n); }
+		else{
+			$r = $idx;
+			$L .= substr($x,$i,1);
+		}
+	}
+	return $L;
+}
+
+sub popsym {
+    my ($self,$i,$x,$r,$y,$n) = @_;
+
+    my $s = substr($x,$i,1);
+    my $pos = index($y,$s,$r);
+    if ($pos == -1 ) { $pos = $n;}
+    return $pos;
+}
+
 
 1;
 __END__
