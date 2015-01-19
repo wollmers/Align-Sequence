@@ -8,20 +8,21 @@ our $VERSION = '0.01';
 use Data::Dumper;
 
 ### test size of integer: print length  pack 'j', -1;" 8 for 64 bit, 4 for 32 bit
+our $width = length(pack('j', -1)) * 8;
+
+no warnings 'portable';
 
 sub index_bits {
   my $b = shift;
   use integer;
 
   my $positions = {};
-
   $positions->{substr($b,$_,1)} |= 1 << ($_ % 64) for 0..length($b)-1;
 
   return $positions;
 }
 
-sub count_bits {
-  no warnings;
+sub count_bits_64 {
   my $self = shift;
   my $bits = shift;
 
@@ -33,13 +34,21 @@ sub count_bits {
   return  ($bits & 0x00000000ffffffff) + (($bits & 0xffffffff00000000) >>32);
 }
 
-no warnings;
-sub LLCS {
+sub count_bits_32 {
+  my $self = shift;
+  my $bits = shift;
+
+  $bits = ($bits & 0x55555555) + (($bits & 0xaaaaaaaa) >> 1);
+  $bits = ($bits & 0x33333333) + (($bits & 0xcccccccc) >> 2);
+  $bits = ($bits & 0x0f0f0f0f) + (($bits & 0xf0f0f0f0) >> 4);
+  $bits = ($bits & 0x00ff00ff) + (($bits & 0xff00ff00) >> 8);
+  return  ($bits & 0x0000ffff) + (($bits & 0xffff0000) >>16);
+}
+
+sub LLCS_64 {
   my ($self,$a,$b) = @_;
 
   use integer;
-
-  #my $v = ~0;
 
   my $positions;
   $positions->{substr($b,$_,1)} |= 1 << ($_ % 64) for 0..length($b)-1;
@@ -47,7 +56,6 @@ sub LLCS {
   my $v = ~0;
 
   for (0..length($a)-1) {
-    #use integer;
     my $p = $positions->{substr($a,$_,1)} // 0;
     my $u = $v & $p;
     #my $u = $v & ($positions->{substr($a,$_,1)} // 0); # slower
@@ -89,15 +97,14 @@ sub match_vector {
   return $b_v;
 }
 
+# nice try, but doesn't work
 sub LCS2 {
   my ($self,$a,$b) = @_;
 
   use integer;
 
   my $b_positions = index_bits($b);
-  #print '$b_positions: ',Dumper($b_positions),"\n";
   my $a_positions = index_bits($a);
-  #print '$a_positions: ',Dumper($a_positions),"\n";
 
   my $b_v = match_vector($a,$b,$b_positions);
   my $a_v = match_vector($b,$a,$a_positions);
@@ -118,8 +125,6 @@ sub LCS2 {
 #print $j,' ',$bj,' ',sprintf("%0${m}b",$y),' ',sprintf("%0${m}b",$K),"\n";
 ##############################
 # code adapted from Algorithm::Diff
-
-no warnings 'portable'; # for 0xffffffffffffffff
 
 sub _replaceNextLargerWith {
     my ( $thresh, $j, $high ) = @_;
@@ -151,10 +156,11 @@ sub _replaceNextLargerWith {
 }
 
 
-sub LCS3 {
+sub LCS_64 {
   my ($ctx, $a, $b) = @_;
 
   use integer;
+  no warnings 'portable'; # for 0xffffffffffffffff
 
   my $m = length($a);
   my $n = length($b);
@@ -205,20 +211,11 @@ sub LCS3 {
 
   if (@$thresh) {
     for ( my $link = $links->[$#$thresh] ; $link ; $link = $link->[0] ) {
-      #print '$link: ',Dumper($link),"\n";
-      #$matchVector->[ $link->[1] ] = $link->[2];
       $matchVector->[ $link->[1] ] = [$link->[1],$link->[2]] if (defined $link->[2]);
     }
   }
-  if (0) {
-    print '$positions: ',Dumper($positions),"\n";
-    print '$thresh: ',Dumper($thresh),"\n";
-    print '$links: ',Dumper($links),"\n";
-    print '$matchVector: ',Dumper($matchVector),"\n";
-  }
 
   return [ grep { defined $_ } @$matchVector ];
-
 }
 
 

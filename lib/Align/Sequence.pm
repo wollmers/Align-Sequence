@@ -560,6 +560,52 @@ sub popsym {
     return $pos;
 }
 
+sub commonPrefix {
+  my ($self, $a, $b) = @_;
+  #if (!$a || !$b || substr($a,0,1) ne substr($b,0,1)) {
+   # return 0;
+  #}
+  my $pointermin = 0;
+  my $pointermax = (length($a) <= length($b)) ? length($a) : length($b);
+  my $pointermid = $pointermax;
+  #my $pointerstart = 0;
+  while ($pointermin < $pointermid) {
+    if (substr($a,$pointermin, $pointermid) eq
+        substr($b,$pointermin, $pointermid)) {
+      $pointermin = $pointermid;
+      #$pointerstart = $pointermin;
+    } else {
+      $pointermax = $pointermid;
+    }
+    $pointermid = int(($pointermax - $pointermin) / 2 + $pointermin);
+  }
+  return $pointermid;
+};
+
+sub commonPrefix2 {
+  my ($self, $a, $b) = @_;
+
+  my $min = 0;
+  my $max = (length($a) <= length($b)) ? length($a) : length($b);
+
+  while ($min < $max and substr($a,$min,1) eq substr($b,$min,1)) {
+    $min++;
+  }
+  return $min;
+};
+
+sub commonPrefix3 {
+  my ($self, $a, $b) = @_;
+
+  my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
+
+  while ($amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
+    $amin++;
+    $bmin++;
+  }
+
+  return $amin;
+};
 
 1;
 __END__
