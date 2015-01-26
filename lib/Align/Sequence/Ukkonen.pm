@@ -18,35 +18,37 @@ sub new {
 sub alg8 {
   my ($self,$k,$p,$a,$b,$m,$n,$F) = @_;
 
-  print '$k: ',$k,' $p: ',$p,"\n";
+  my $debug = 1;
+
+  print '$k: ',$k,' $p: ',$p,"\n" if $debug;
   if (defined $F->{$k}->{$p}) {
-    print 'defined: ',$F->{$k}->{$p},"\n";
+    print 'defined: ',$F->{$k}->{$p},"\n" if $debug;
     return $F->{$k}->{$p};
   }
   #if ($k < 0) {return abs($k)-1;}
   elsif ($k < 0 && $p == abs($k)-1) {
     $F->{$k}->{$p} = abs($k)-1;
-    print 'k < 0: ',$F->{$k}->{$p},"\n";
+    print 'k < 0: ',$F->{$k}->{$p},"\n" if $debug;
     return $F->{$k}->{$p};
   }
   elsif ($k >= 0 && $p == abs($k)-1) {
     $F->{$k}->{$p} = -1;
-    print 'k >= 0: ',$F->{$k}->{$p},"\n";
+    print 'k >= 0: ',$F->{$k}->{$p},"\n" if $debug;
     return $F->{$k}->{$p};
   }
   elsif ($p < 0 ) {
   	$F->{$k}->{$p} = -($m+$n);
-    print 'p < -1: ',$F->{$k}->{$p},"\n";
+    print 'p < -1: ',$F->{$k}->{$p},"\n" if $debug;
     return $F->{$k}->{$p};
   }
   elsif ($k < 0 && abs($k) > $m ) {
   	$F->{$k}->{$p} = -($m+$n);
-    print 'p < -1: ',$F->{$k}->{$p},"\n";
+    print 'p < -1: ',$F->{$k}->{$p},"\n" if $debug;
     return $F->{$k}->{$p};
   }
   elsif ($k > 0 && abs($k) > $n ) {
   	$F->{$k}->{$p} = -($m+$n);
-    print 'p < -1: ',$F->{$k}->{$p},"\n";
+    print 'p < -1: ',$F->{$k}->{$p},"\n" if $debug;
     return $F->{$k}->{$p};
   }
 
@@ -59,7 +61,7 @@ sub alg8 {
   	$self->alg8($k-1,$p-1,$a,$b,$m,$n,$F),
   	$self->alg8($k+1,$p-1,$a,$b,$m,$n,$F)
   );
-  print '$t: ',$t,"\n";
+  print '$t: ',$t,"\n" if $debug;
   #exit;
   # TODO: should be $t, because index origin is 0, not 1
   # while ($a->[$t+1] eq $b->[$t+1+$k]) {
@@ -88,30 +90,33 @@ sub alg11 {
   my $f;
 
 #  while ($self->alg8($n-$m,$p,$a,$b,$m,$n,$F) < $m-1) {
+  # check, if a diagonal path reached the end
   while (!exists($F->{$n-$m}->{$p}) || $F->{$n-$m}->{$p} < $m-1) {
-#  while ($p < 0) {
-
+    print STDERR 'while: $n-$m: ',$n-$m,' $p: ',$p,"\n";
     $p++;
     $r++;
     if ($r <= 0) {
-      print STDERR '$p: ',$p,' $r: ',$r,"\n";
+      print STDERR 'in while, if: $p: ',$p,' $r: ',$r,"\n";
       #print STDERR 'alg11 $F: ',Dumper($F);
       #exit;
       for my $k (-$p .. $p) {
         #print STDERR '$k: ',$k,' $p: ',$p,"\n";
         #exit;
         $f = $self->alg8($k,$p,$a,$b,$m,$n,$F);
+        print STDERR 'in for, if: $k: ',$k,' $p: ',$p,' $f: ',$f,"\n";
       }
     }
     else {
-      for my $k (min(-$m,-$p) .. min($n,$p)) {
+      print STDERR 'in while, else: $p: ',$p,' $r: ',$r,"\n";
+      for my $k ($self->min(-$m,-$p) .. $self->min($n,$p)) {
         $f = $self->alg8($k,$p,$a,$b,$m,$n,$F);
+        print STDERR 'in for, else: $k: ',$k,' $p: ',$p,' $f: ',$f,"\n";
       }
     }
-    #exit
   }
   print STDERR 'alg11 $F: ',Dumper($F);
   print STDERR 'return $p: ',$p,' $r: ',$r,"\n";
+  $self->print_matrix($a,$b,$m,$n,$F);
   return $p;
 }
 
@@ -180,3 +185,32 @@ sub max {
 sub min {
   ($_[1] < $_[2]) ? $_[1] : $_[2];
 }
+
+sub print_matrix {
+  my ($self,$a,$b,$m,$n,$F) = @_;
+
+  if (1 && ($m < 20)) {
+    print join('',map { sprintf('%4s',$_) } '','','',1..$n),"\n";
+    print join('',map { sprintf('%4s',$_) } '','','',@$b),"\n";
+    #print join('',map { sprintf('%4s',$_) } '','');
+    #print "\n";
+    my $i;
+    for ($i=0;$i<=$m;$i++) {
+      if ($i) {
+        my $x = $a->[$i-1];print join('',map { sprintf('%4s',$_) } ($i,$x));
+      }
+      else {print join('',map { sprintf('%4s',$_) } ($i,' '));}
+      for my $j (0..$n) {
+        my $f;
+        if (exists $F->{$j-$i}->{$i}) {
+          $f = $F->{$j-$i}->{$i};
+          print sprintf('%4s',$f);
+        }
+        else {print '   _';}
+
+      }
+      print "\n";
+    }
+  }
+}
+

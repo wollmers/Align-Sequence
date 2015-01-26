@@ -30,18 +30,28 @@ ok($class->new());
 }
 
 my $examples = [
+  [ 'a',
+    'a' ],
+  [ 'a',
+    'b' ],
   [ 'ab',
     'ab' ],
+  [ 'abcde',
+    'abcde' ],
+  [ 'yxxz',
+    'xyxzy' ],
   ['ttatc__cg',
    '__agcaact'],
+  ['abc',
+   'cb_'],
   ['abcabba_',
    'cb_ab_ac'],
+   ['yq',
+    'zq'],
    ['yqabc_',
     'zq__cb'],
   [ 'rrp',
     'rep'],
-  [ 'a',
-    'b' ],
   [ 'ab',
     'cd' ],
   [ 'ab',
@@ -64,6 +74,8 @@ my $examples = [
     'ho__n'],
   [ 'Chrerrplzon',
     'Choereph_on'],
+  [ 'plzon',
+    'ph_on'],
   [ 'Chrerr',
     'Choere'],
   [ 'rr',
@@ -118,22 +130,26 @@ if (0) {
 
 }
 
+my $class2 = 'Align::Sequence';
 
+use_ok($class2);
+
+my $object2 = new_ok($class2);
 
 if (1) {
 #for my $example (@$examples) {
-for my $example ($examples->[6]) {
+for my $example ($examples->[4]) {
   my $a = $example->[0];
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;
   my @b = $b =~ /([^_])/g;
 
-  my @lev2 = sdiff(\@a,\@b);
-
+  #my @lev2 = sdiff(\@a,\@b);
+  my $lev2 = $object2->basic_distance(\@a,\@b);
   my $lev = $object->lev(\@a,\@b);
 
-  print '$lev2: ',Dumper(\@lev2);
-  is($lev,scalar @lev2);
+  #print '$lev2: ',Dumper(\@lev2);
+  is($lev,$lev2,"$a, $b");
 
 }
 }

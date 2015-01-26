@@ -265,6 +265,63 @@ sub basic_llcs {
   return ($c->[1][$n]);
 }
 
+sub basic_distance {
+  my ($self,$X,$Y) = @_;
+
+  my $m = scalar @$X;
+  my $n = scalar @$Y;
+
+  my $c = [];
+  my ($i,$j);
+  for ($i=0;$i<=$m;$i++) {
+    for ($j=0;$j<=$n;$j++) {
+             $c->[$i][$j]=0;
+    }
+  }
+  for ($i=0;$i<=$m;$i++) {
+    $c->[$i][0]=$i;
+  }
+  for ($j=0;$j<=$n;$j++) {
+    $c->[0][$j]=$j;
+  }
+  for ($i=1;$i<=$m;$i++) {
+    for ($j=1;$j<=$n;$j++) {
+      my $change = 1;
+      if ($X->[$i-1] eq $Y->[$j-1]) {
+        $change = 0;
+      }
+      $c->[$i][$j] = $self->min3(
+          $c->[$i][$j-1]+1,
+          $c->[$i-1][$j]+1,
+          $c->[$i-1][$j-1]+$change
+      );
+    }
+  }
+  #return $c;
+  #print '$c: ',Dumper($c),"\n";
+  #print '$X: ',Dumper($X),"\n";
+  if (1 && ($m < 20)) {
+    print "\n",'    ',join(' ',@$Y),"\n";
+    print '  ';
+    for my $j (0..$n) { my $a = $c->[0][$j]; print $a,' ';}
+    print "\n";
+    for ($i=1;$i<=$m;$i++) {
+      my $x = $X->[$i-1];print $x,' ';
+      for my $j (0..$n) { my $a = $c->[$i][$j]; print $a,' ';}
+      print "\n";
+    }
+    print "\n";
+  }
+
+  #my $L = [];
+  #my @R = $self->print_lcs($X,$Y,$c,$m,$n);
+  #my @R = $self->backtrackAll($X,$Y,$c,$m,$n);
+  my $distance = $c->[$m][$n];
+  return $distance;
+  #print '@R: ',Dumper(\@R),"\n";
+  #return @R;
+}
+
 sub basic_lcs {
   my ($self,$X,$Y) = @_;
 
@@ -311,6 +368,7 @@ sub basic_lcs {
   #print '@R: ',Dumper(\@R),"\n";
   #return @R;
 }
+
 
 sub max {
   ($_[0] > $_[1]) ? $_[0] : $_[1];
@@ -393,6 +451,14 @@ sub max3 {
     : (($_[2] >= $_[3]) ? $_[2] : $_[3])
   )
 }
+
+sub min3 {
+  ( ($_[1] < $_[2])
+    ? (($_[1] <= $_[3]) ? $_[1] : $_[3])
+    : (($_[2] <= $_[3]) ? $_[2] : $_[3])
+  )
+}
+
 
 sub score {
   #print STDERR $_[0],$_[1],"\n";

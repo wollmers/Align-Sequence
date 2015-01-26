@@ -225,7 +225,7 @@ for my $example ($examples->[1]) {
 
 use Align::Sequence::BV;
 
-if (1) {
+if (0) {
 #for my $example (@$examples) {
 for my $example ($examples->[1]) {
   my $a = $example->[0];
@@ -275,6 +275,27 @@ for my $example (@$examples) {
   is(
     $object->basic_llcs(\@a,\@b) ,
     $lcs->LCS(\@a,\@b) ,
+    "$a, $b"
+  );
+
+}
+}
+
+if (1) {
+#for my $example (@$examples) {
+for my $example ($examples->[0]) {
+  my $a = $example->[0];
+  my $b = $example->[1];
+  my @a = $a =~ /([^_])/g;
+  my @b = $b =~ /([^_])/g;
+
+  #print STDERR Dumper([ $object->LCSidx(\@a,\@b) ]),"\n";
+
+  #print STDERR Dumper([ $lcs->LCS(\@a,\@b) ]),"\n";
+
+  is(
+    $object->basic_distance(\@a,\@b) ,
+    $object->basic_distance(\@a,\@b) ,
     "$a, $b"
   );
 
