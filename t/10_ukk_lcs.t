@@ -38,6 +38,8 @@ my $examples = [
     'ab' ],
   [ 'abcde',
     'abcde' ],
+  [ 'yxx',
+    'xyx' ],
   [ 'yxxz',
     'xyxzy' ],
   ['ttatc__cg',
@@ -84,51 +86,6 @@ my $examples = [
     '_bcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'],
 ];
 
-sub is_in {
-  my ($needle,$hay) = @_;
-
-ARRAY:  for my $array (@$hay) {
-    next ARRAY unless (@$needle == @$array);
-    for my $i (0..$#$array) {
-      next ARRAY unless (@{$needle->[$i]} == @{$needle->[$i]});
-      for my $j (0..$#{$array->[$i]}) {
-        next ARRAY unless (@{$needle->[$i][$j]} eq @{$needle->[$i][$j]});
-      }
-    }
-   return $array;
-  }
-  return [];
-}
-
-if (0) {
-  is($object->max3(1,1,1),1,'1,1,1');
-  is($object->max3(1,1,0),1,'1,1,0');
-  is($object->max3(1,0,0),1,'1,0,0');
-  is($object->max3(1,0,1),1,'1,0,1');
-  is($object->max3(0,1,1),1,'0,1,1');
-  is($object->max3(0,0,1),1,'0,0,1');
-  is($object->max3(0,1,0),1,'0,1,0');
-  is($object->max3(0,0,0),0,'0,0,0');
-  is($object->max3(1,2,3),3,'1,2,3');
-  is($object->max3(3,2,1),3,'3,2,1');
-  is($object->max3(1,3,2),3,'1,1,1');
-}
-
-if (0) {
-  is($object->max(1,1),1,'1,1');
-  is($object->max(1,0),1,'1,0');
-  is($object->max(0,1),1,'0,1');
-  is($object->max(0,0),0,'0,0');
-
-}
-
-if (0) {
-  is($object->min(1,1),1,'1,1');
-  is($object->min(1,0),0,'1,0');
-  is($object->min(0,1),0,'0,1');
-  is($object->min(0,0),0,'0,0');
-
-}
 
 my $class2 = 'Align::Sequence';
 
@@ -137,8 +94,8 @@ use_ok($class2);
 my $object2 = new_ok($class2);
 
 if (1) {
-#for my $example (@$examples) {
-for my $example ($examples->[4]) {
+for my $example (@$examples) {
+#for my $example ($examples->[22]) {
   my $a = $example->[0];
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;

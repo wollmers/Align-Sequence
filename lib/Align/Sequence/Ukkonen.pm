@@ -18,61 +18,38 @@ sub new {
 sub alg8 {
   my ($self,$k,$p,$a,$b,$m,$n,$F) = @_;
 
-  my $debug = 1;
-
-  print '$k: ',$k,' $p: ',$p,"\n" if $debug;
-  if (defined $F->{$k}->{$p}) {
-    print 'defined: ',$F->{$k}->{$p},"\n" if $debug;
+  if (exists $F->{$k}->{$p}) {
     return $F->{$k}->{$p};
   }
-  #if ($k < 0) {return abs($k)-1;}
   elsif ($k < 0 && $p == abs($k)-1) {
     $F->{$k}->{$p} = abs($k)-1;
-    print 'k < 0: ',$F->{$k}->{$p},"\n" if $debug;
     return $F->{$k}->{$p};
   }
   elsif ($k >= 0 && $p == abs($k)-1) {
     $F->{$k}->{$p} = -1;
-    print 'k >= 0: ',$F->{$k}->{$p},"\n" if $debug;
     return $F->{$k}->{$p};
   }
-  elsif ($p < 0 ) {
+  elsif ($p < -1 ) {
   	$F->{$k}->{$p} = -($m+$n);
-    print 'p < -1: ',$F->{$k}->{$p},"\n" if $debug;
     return $F->{$k}->{$p};
   }
   elsif ($k < 0 && abs($k) > $m ) {
   	$F->{$k}->{$p} = -($m+$n);
-    print 'p < -1: ',$F->{$k}->{$p},"\n" if $debug;
     return $F->{$k}->{$p};
   }
   elsif ($k > 0 && abs($k) > $n ) {
   	$F->{$k}->{$p} = -($m+$n);
-    print 'p < -1: ',$F->{$k}->{$p},"\n" if $debug;
     return $F->{$k}->{$p};
   }
 
-  #print 'alg8 $F: ',Dumper($F);
-  #print '$k: ',$k,' $p: ',$p,"\n";
-  #exit;
-
   my $t = $self->max3(
-  	$self->alg8($k,  $p-1,$a,$b,$m,$n,$F),
+  	$self->alg8($k,  $p-1,$a,$b,$m,$n,$F)+1,
   	$self->alg8($k-1,$p-1,$a,$b,$m,$n,$F),
-  	$self->alg8($k+1,$p-1,$a,$b,$m,$n,$F)
+  	$self->alg8($k+1,$p-1,$a,$b,$m,$n,$F)+1
   );
-  print '$t: ',$t,"\n" if $debug;
-  #exit;
-  # TODO: should be $t, because index origin is 0, not 1
-  # while ($a->[$t+1] eq $b->[$t+1+$k]) {
-  while (($t >= -1) && ($t+1 < $m) && ($t+1+$k < $n) && ($a->[$t+1] eq $b->[$t+1+$k])) {
+  while (($t > -1) && ($t < $m) && (($t+$k) > -1) && (($t+$k) < $n) && ($a->[$t] eq $b->[$t+$k])) {
     $t++;
   }
-  #my $f;
-  #if (($t > $m) || ($t+$k > $n)) {
-  #  $f = undef;
-  #}
-  #else { $f = $t }
 
   $F->{$k}->{$p} = $t;
 
@@ -82,56 +59,46 @@ sub alg8 {
 sub alg11 {
   my ($self,$a,$b,$m,$n,$F) = @_;
 
+  my $debug = 0;
+
   my $p = -1;
   my $r = $p - $self->min($m,$n);
 
-  print STDERR '$p: ',$p,' $r: ',$r,"\n";
-  #exit;
-  my $f;
-
-#  while ($self->alg8($n-$m,$p,$a,$b,$m,$n,$F) < $m-1) {
   # check, if a diagonal path reached the end
-  while (!exists($F->{$n-$m}->{$p}) || $F->{$n-$m}->{$p} < $m-1) {
-    print STDERR 'while: $n-$m: ',$n-$m,' $p: ',$p,"\n";
+  while (!exists($F->{$n-$m}->{$p}) || $F->{$n-$m}->{$p} < $m) {
     $p++;
     $r++;
     if ($r <= 0) {
-      print STDERR 'in while, if: $p: ',$p,' $r: ',$r,"\n";
-      #print STDERR 'alg11 $F: ',Dumper($F);
-      #exit;
       for my $k (-$p .. $p) {
-        #print STDERR '$k: ',$k,' $p: ',$p,"\n";
-        #exit;
-        $f = $self->alg8($k,$p,$a,$b,$m,$n,$F);
-        print STDERR 'in for, if: $k: ',$k,' $p: ',$p,' $f: ',$f,"\n";
+        $self->alg8($k,$p,$a,$b,$m,$n,$F);
       }
     }
     else {
-      print STDERR 'in while, else: $p: ',$p,' $r: ',$r,"\n";
       for my $k ($self->min(-$m,-$p) .. $self->min($n,$p)) {
-        $f = $self->alg8($k,$p,$a,$b,$m,$n,$F);
-        print STDERR 'in for, else: $k: ',$k,' $p: ',$p,' $f: ',$f,"\n";
+        $self->alg8($k,$p,$a,$b,$m,$n,$F);
       }
     }
   }
-  print STDERR 'alg11 $F: ',Dumper($F);
-  print STDERR 'return $p: ',$p,' $r: ',$r,"\n";
-  $self->print_matrix($a,$b,$m,$n,$F);
+  $self->print_matrix($a,$b,$m,$n,$F) if $debug;
   return $p;
 }
 
 # reading out the edit script
+# TODO: debug
 sub alg12 {
-  my ($self,$s,$m, $n,$a,$b) = @_;
+  my ($self,$s,$m, $n,$a,$b,$F) = @_;
 
-  my $p = $s;
+  my $p = $s; # distance from alg11
   my $k = $m - $n;
 
   while ($p > 0) {
     my $t = $self->max3(
-      f($k,$p-1)+1,
-      f($k-1,$p-1),
-      f($k+1,$p-1)+1,
+      #f($k,$p-1)+1,
+      $F->{$k}->{$p-1}+1,
+      #f($k-1,$p-1),
+      $F->{$k-1}->{$p-1},
+      #f($k+1,$p-1)+1,
+      $F->{$k+1}->{$p-1}+1,
     );
     # let 1 <= i <= 3 be such that
     # the ith of expressions
@@ -139,12 +106,12 @@ sub alg12 {
     # has the largest value
     my $i;
     for (1 .. 3) {
-
+      # TODO
     }
-    if ($i = 1) {
+    if ($i == 1) {
       $self->change($a->[$t],$b->[$t+$k]);
     }
-    elsif ($i = 2) {
+    elsif ($i == 2) {
       $self->insert($a->[$t],$b->[$t+$k]);
       $k = $k-1;
     }
@@ -163,7 +130,7 @@ sub lev {
   my $m = scalar @$a;
   my $n = scalar @$b;
 
-  print STDERR '$m: ',$m,' $n: ',$n,"\n";
+  #print STDERR '$m: ',$m,' $n: ',$n,"\n";
 
   my $F = {};
 

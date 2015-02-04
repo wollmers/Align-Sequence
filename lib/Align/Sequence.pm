@@ -297,10 +297,7 @@ sub basic_distance {
       );
     }
   }
-  #return $c;
-  #print '$c: ',Dumper($c),"\n";
-  #print '$X: ',Dumper($X),"\n";
-  if (1 && ($m < 20)) {
+  if (0 && ($m < 20)) {
     print "\n",'    ',join(' ',@$Y),"\n";
     print '  ';
     for my $j (0..$n) { my $a = $c->[0][$j]; print $a,' ';}
@@ -313,13 +310,8 @@ sub basic_distance {
     print "\n";
   }
 
-  #my $L = [];
-  #my @R = $self->print_lcs($X,$Y,$c,$m,$n);
-  #my @R = $self->backtrackAll($X,$Y,$c,$m,$n);
   my $distance = $c->[$m][$n];
   return $distance;
-  #print '@R: ',Dumper(\@R),"\n";
-  #return @R;
 }
 
 sub basic_lcs {
