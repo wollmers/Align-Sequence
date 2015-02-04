@@ -44,8 +44,11 @@ sub alg8 {
 
   my $t = $self->max3(
   	$self->alg8($k,  $p-1,$a,$b,$m,$n,$F)+1,
+  	#-($m+$n),
   	$self->alg8($k-1,$p-1,$a,$b,$m,$n,$F),
+  	#-($m+$n),
   	$self->alg8($k+1,$p-1,$a,$b,$m,$n,$F)+1
+  	#-($m+$n),
   );
   while (($t > -1) && ($t < $m) && (($t+$k) > -1) && (($t+$k) < $n) && ($a->[$t] eq $b->[$t+$k])) {
     $t++;
@@ -90,38 +93,35 @@ sub alg12 {
 
   my $p = $s; # distance from alg11
   my $k = $m - $n;
+    my @edit_script;
+    my @edit_script;
+
+  my @edit_script;
 
   while ($p > 0) {
-    my $t = $self->max3(
-      #f($k,$p-1)+1,
+    my ($t,$i) = $self->max3index(
       $F->{$k}->{$p-1}+1,
-      #f($k-1,$p-1),
       $F->{$k-1}->{$p-1},
-      #f($k+1,$p-1)+1,
       $F->{$k+1}->{$p-1}+1,
     );
     # let 1 <= i <= 3 be such that
     # the ith of expressions
     # f($k,$p-1)+1,f(k-1,p-1),f(k+1,p-1)+1,
     # has the largest value
-    my $i;
-    for (1 .. 3) {
-      # TODO
-    }
     if ($i == 1) {
-      $self->change($a->[$t],$b->[$t+$k]);
+      unshift @edit_script,['change',$a->[$t],$b->[$t+$k]];
     }
     elsif ($i == 2) {
-      $self->insert($a->[$t],$b->[$t+$k]);
+      unshift @edit_script,['insert',$a->[$t],$b->[$t+$k]];
       $k = $k-1;
     }
     else {
-      $self->delete($a->[$t]);
+      unshift @edit_script,['delete',$a->[$t],$b->[$t+$k]];
       $k = $k+1;
     }
     $p--;
   }
-  # return what?
+  return @edit_script;
 }
 
 sub lev {
@@ -144,6 +144,14 @@ sub max3 {
     : (($_[2] >= $_[3]) ? $_[2] : $_[3])
   )
 }
+
+sub max3index {
+  ( ($_[1] > $_[2])
+    ? (($_[1] >= $_[3]) ? ($_[1],1) : ($_[3],3))
+    : (($_[2] >= $_[3]) ? ($_[2],2) : ($_[3],3))
+  )
+}
+
 
 sub max {
   ($_[1] > $_[2]) ? $_[1] : $_[2];
