@@ -93,7 +93,7 @@ use_ok($class2);
 
 my $object2 = new_ok($class2);
 
-if (1) {
+if (0) {
 for my $example (@$examples) {
 #for my $example ($examples->[22]) {
   my $a = $example->[0];
@@ -107,6 +107,24 @@ for my $example (@$examples) {
 
   #print '$lev2: ',Dumper(\@lev2);
   is($lev,$lev2,"$a, $b");
+
+}
+}
+
+if (1) {
+#for my $example (@$examples) {
+for my $example ($examples->[1]) {
+  my $a = $example->[0];
+  my $b = $example->[1];
+  my @a = $a =~ /([^_])/g;
+  my @b = $b =~ /([^_])/g;
+
+  #my @lev2 = sdiff(\@a,\@b);
+  #my $lev2 = $object2->basic_distance(\@a,\@b);
+  my $script = $object->edit_script(\@a,\@b);
+
+  print '$script: ',Dumper($script);
+  #is($lev,$lev2,"$a, $b");
 
 }
 }

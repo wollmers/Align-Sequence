@@ -29,18 +29,18 @@ sub alg8 {
     $F->{$k}->{$p} = -1;
     return $F->{$k}->{$p};
   }
-  elsif ($p < -1 ) {
+  elsif ($p < abs($k)-1 ) {
   	$F->{$k}->{$p} = -($m+$n);
     return $F->{$k}->{$p};
   }
-  elsif ($k < 0 && abs($k) > $m ) {
-  	$F->{$k}->{$p} = -($m+$n);
-    return $F->{$k}->{$p};
-  }
-  elsif ($k > 0 && abs($k) > $n ) {
-  	$F->{$k}->{$p} = -($m+$n);
-    return $F->{$k}->{$p};
-  }
+  #elsif ($k < 0 && abs($k) > $m ) {
+  #	$F->{$k}->{$p} = -($m+$n);
+  #  return $F->{$k}->{$p};
+  #}
+  #elsif ($k > 0 && abs($k) > $n ) {
+  #	$F->{$k}->{$p} = -($m+$n);
+  #  return $F->{$k}->{$p};
+  #}
 
   my $t = $self->max3(
   	$self->alg8($k,  $p-1,$a,$b,$m,$n,$F)+1,
@@ -62,7 +62,7 @@ sub alg8 {
 sub alg11 {
   my ($self,$a,$b,$m,$n,$F) = @_;
 
-  my $debug = 0;
+  my $debug = 1;
 
   my $p = -1;
   my $r = $p - $self->min($m,$n);
@@ -82,7 +82,8 @@ sub alg11 {
       }
     }
   }
-  $self->print_matrix($a,$b,$m,$n,$F) if $debug;
+  #print Dumper($F) if $debug;
+  #$self->print_matrix($a,$b,$m,$n,$F) if $debug;
   return $p;
 }
 
@@ -93,8 +94,6 @@ sub alg12 {
 
   my $p = $s; # distance from alg11
   my $k = $m - $n;
-    my @edit_script;
-    my @edit_script;
 
   my @edit_script;
 
@@ -108,15 +107,16 @@ sub alg12 {
     # the ith of expressions
     # f($k,$p-1)+1,f(k-1,p-1),f(k+1,p-1)+1,
     # has the largest value
+    print '$t : ',$t,' $i: ',$i,"\n";
     if ($i == 1) {
-      unshift @edit_script,['change',$a->[$t],$b->[$t+$k]];
+      unshift @edit_script,['change',$a->[$t-1],$b->[$t+$k-1]];
     }
     elsif ($i == 2) {
-      unshift @edit_script,['insert',$a->[$t],$b->[$t+$k]];
+      unshift @edit_script,['insert',$a->[$t-1],$b->[$t+$k-1]];
       $k = $k-1;
     }
     else {
-      unshift @edit_script,['delete',$a->[$t],$b->[$t+$k]];
+      unshift @edit_script,['delete',$a->[$t-1],$b->[$t+$k-1]];
       $k = $k+1;
     }
     $p--;
@@ -135,8 +135,24 @@ sub lev {
   my $F = {};
 
   my $lev = $self->alg11($a,$b,$m,$n,$F);
-  return $lev;
 }
+
+sub edit_script {
+  my ($self,$a,$b) = @_;
+
+  my $m = scalar @$a;
+  my $n = scalar @$b;
+
+  #print STDERR '$m: ',$m,' $n: ',$n,"\n";
+
+  my $F = {};
+
+  my $lev = $self->alg11($a,$b,$m,$n,$F);
+  my @script = $self->alg12($lev,$m, $n,$a,$b,$F);
+
+  return \@script;
+}
+
 
 sub max3 {
   ( ($_[1] > $_[2])
