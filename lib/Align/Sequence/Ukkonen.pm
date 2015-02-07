@@ -43,8 +43,8 @@ sub alg8 {
   #}
 
   my $t = $self->max3(
-  	$self->alg8($k,  $p-1,$a,$b,$m,$n,$F)+1,
-  	#-($m+$n),
+  	#$self->alg8($k,  $p-1,$a,$b,$m,$n,$F)+1, # for lev (insert, delete, change)
+  	$self->min(0,$p), # for distance LCS (only insert, delete)
   	$self->alg8($k-1,$p-1,$a,$b,$m,$n,$F),
   	#-($m+$n),
   	$self->alg8($k+1,$p-1,$a,$b,$m,$n,$F)+1
@@ -62,7 +62,7 @@ sub alg8 {
 sub alg11 {
   my ($self,$a,$b,$m,$n,$F) = @_;
 
-  my $debug = 1;
+  my $debug = 0;
 
   my $p = -1;
   my $r = $p - $self->min($m,$n);
@@ -82,8 +82,8 @@ sub alg11 {
       }
     }
   }
-  #print Dumper($F) if $debug;
-  #$self->print_matrix($a,$b,$m,$n,$F) if $debug;
+  print Dumper($F) if $debug;
+  $self->print_matrix($a,$b,$m,$n,$F) if $debug;
   return $p;
 }
 
@@ -99,7 +99,8 @@ sub alg12 {
 
   while ($p > 0) {
     my ($t,$i) = $self->max3index(
-      $F->{$k}->{$p-1}+1,
+      #$F->{$k}->{$p-1}+1, # for lev
+      -1, # for LCS
       $F->{$k-1}->{$p-1},
       $F->{$k+1}->{$p-1}+1,
     );
@@ -109,14 +110,14 @@ sub alg12 {
     # has the largest value
     print '$t : ',$t,' $i: ',$i,"\n";
     if ($i == 1) {
-      unshift @edit_script,['change',$a->[$t-1],$b->[$t+$k-1]];
+      unshift @edit_script,['change',$a->[$t-1],$b->[$t+$k-1],$t-1,$t+$k-1];
     }
     elsif ($i == 2) {
-      unshift @edit_script,['insert',$a->[$t-1],$b->[$t+$k-1]];
+      unshift @edit_script,['insert','',$b->[$t+$k-1],'',$t+$k-1];
       $k = $k-1;
     }
     else {
-      unshift @edit_script,['delete',$a->[$t-1],$b->[$t+$k-1]];
+      unshift @edit_script,['delete',$a->[$t-1],'',$t-1,''];
       $k = $k+1;
     }
     $p--;

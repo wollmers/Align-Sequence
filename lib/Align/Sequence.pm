@@ -266,7 +266,7 @@ sub basic_llcs {
 }
 
 sub basic_distance {
-  my ($self,$X,$Y) = @_;
+  my ($self,$X,$Y,$change_cost) = @_;
 
   my $m = scalar @$X;
   my $n = scalar @$Y;
@@ -286,7 +286,7 @@ sub basic_distance {
   }
   for ($i=1;$i<=$m;$i++) {
     for ($j=1;$j<=$n;$j++) {
-      my $change = 1;
+      my $change = $change_cost;
       if ($X->[$i-1] eq $Y->[$j-1]) {
         $change = 0;
       }
