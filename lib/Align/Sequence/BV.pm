@@ -272,6 +272,40 @@ sub LCS {
             map([$_ => ++$bmax], ($amax+1) .. $#$a);
 }
 
+sub closest {
+  my ($self, $a) = @_;
+
+}
+
+# Apostolico/Guerra
+sub ag {
+  my ($self, $a, $b) = @_;
+  my $Thresh = [];
+  my $m = $#$a;
+  my $n = $#$b;
+
+  $thresh->[0] = 0;
+  for my $k (1 .. $m) {
+    $tresh->[$k] = $n+1;
+  }
+  for my $i (1 .. $m) {
+    my $j = $self->closest($a->[$i-1],1);
+    my $k = 1;
+    while ($j < n+1) {
+      if ($j < $thresh->[$k]) {
+        my $temp = $thresh->[$k];
+        $thresh->[$k] = $j;
+        # record minimal match
+        $j = $self->closest($a->[$i-1],$temp+1);
+      }
+      if ($j == $thresh->[$k]) {
+        $self->closest($a->[$i-1],$j+1);
+      }
+      $k++;
+    }
+  }
+}
+
 1;
 
 __END__

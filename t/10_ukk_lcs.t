@@ -38,22 +38,22 @@ my $examples = [
     'ab' ],
   [ 'abcde',
     'abcde' ],
-  [ 'yxx',
-    'xyx' ],
-  [ 'yxxz',
-    'xyxzy' ],
+  [ 'abb',
+    'bab' ],
+  [ 'abbc',
+    'babca' ],
   ['ttatc__cg',
    '__agcaact'],
   ['abc',
    'cb_'],
   ['abcabba_',
    'cb_ab_ac'],
-   ['yq',
-    'zq'],
+   ['ab',
+    'cb'],
    ['yqabc_',
     'zq__cb'],
-  [ 'rrp',
-    'rep'],
+  [ 'aab',
+    'acb'],
   [ 'ab',
     'cd' ],
   [ 'ab',
@@ -80,8 +80,8 @@ my $examples = [
     'ph_on'],
   [ 'Chrerr',
     'Choere'],
-  [ 'rr',
-    're'],
+  [ 'aa',
+    'ab'],
   [ 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY_',
     '_bcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'],
 ];
@@ -113,7 +113,7 @@ for my $example (@$examples) {
 
 if (1) {
 #for my $example (@$examples) {
-for my $example ($examples->[4]) {
+for my $example ($examples->[5]) {
   my $a = $example->[0];
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;
@@ -121,7 +121,7 @@ for my $example ($examples->[4]) {
 
   #my @lev2 = sdiff(\@a,\@b);
   #my $lev2 = $object2->basic_distance(\@a,\@b);
-  my $script = $object->edit_script(\@a,\@b);
+  my $script = $object->lcs(\@a,\@b);
 
 
   print "$a, $b ",'$script: ',Dumper($script);
@@ -133,3 +133,20 @@ for my $example ($examples->[4]) {
 
 
 done_testing;
+
+=comment
+
+l1 a2
+a a
+a b
+
+l1 2 a2
+a aa
+a ab
+a ba
+a bb
+
+l2 a2
+aa ab
+aa ba
+aa bb
