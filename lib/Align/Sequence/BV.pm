@@ -170,20 +170,16 @@ sub LCS_64 {
   use integer;
   no warnings 'portable'; # for 0xffffffffffffffff
 
-  #my $m = @$a;
-  #my $n = @$b;
+  my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
 
-    my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
-
-    while (1 and $amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
-        $amin++;
-        $bmin++;
-    }
-    while (1 and $amin <= $amax and $bmin <= $bmax and $a->[$amax] eq $b->[$bmax]) {
-        $amax--;
-        $bmax--;
-    }
-
+  while ($amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
+    $amin++;
+    $bmin++;
+  }
+  while ($amin <= $amax and $bmin <= $bmax and $a->[$amax] eq $b->[$bmax]) {
+    $amax--;
+    $bmax--;
+  }
 
   my $positions;
   $positions->{$a->[$_]} |= 1 << ($_ % 64) for $amin..$amax;
@@ -195,6 +191,7 @@ sub LCS_64 {
   my $links  = [];
   my $bj;
 
+  # outer loop
   for my $j ($bmin..$bmax) {
     $bj = $b->[$j];
     next unless (defined $positions->{$bj});
@@ -204,6 +201,8 @@ sub LCS_64 {
     my $K = ($S ^ $SS) & $S;
 
     #print $j,' ',$bj,' ',sprintf("%0${m}b",$y),' ',sprintf("%0${m}b",$K),"\n";
+
+    # inner loop
     while ($K > 0) {
       my $i;
       {
@@ -211,10 +210,35 @@ sub LCS_64 {
         $i = int(log($K)/log(2));
       }
       # find k such that thresh[k-1] < i <= thresh[k]
-      my $k = _replaceNextLargerWith( $thresh, $i );
+      my $k;
+      # off the end?
+      #if ( $#$thresh == -1 || $i > $thresh->[-1] ) {
+      if ( !@$thresh || $i > $thresh->[-1] ) {
+        $thresh->[$#$thresh+1] = $i;
+        $k = $#$thresh;
+      }
+      else {
+        # binary search for insertion point
+        $k = 0;
+        my $index;
+        my $found;
+        my $high = $#$thresh;
+        while ( $k <= $high ) {
+          use integer;
+          $index = ( $high + $k ) / 2;
+          #$index = int(( $high + $k ) / 2);  # without 'use integer'
+          $found = $thresh->[$index];
+
+          if ( $i == $found ) { $k = undef; last; }
+          elsif ( $i > $found ) { $k = $index + 1; }
+          else { $high = $index - 1; }
+        }
+        # now insertion point is in $k.
+        $thresh->[$k] = $i if (defined $k);    # overwrite next larger
+      }
+      # end   inlining _replaceNextLargerWith()
       if (defined $k) {
         $links->[$k] = [ ( $k ? $links->[ $k - 1 ] : undef ), $i, $j ];
-        #print '$links: ',Dumper($links);
       }
       $K = $K & ~2**$i; # clean the bit at position $i
     }
@@ -226,16 +250,10 @@ sub LCS_64 {
       unshift @$matchVector,[$link->[1],$link->[2]];
     }
   }
-  #print '$matchVector: ',Dumper($matchVector);
-  #return $matchVector;
-    if (0 && $amin > 0) {
-        $_->[0] += $amin for @$matchVector; # correct line numbers
-    }
 
   return [ map([$_ => $_], 0 .. ($bmin-1)),
         @$matchVector,
             map([++$amax => $_], ($bmax+1) .. $#$b) ];
-
 }
 
 
