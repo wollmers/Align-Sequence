@@ -253,12 +253,44 @@ for my $example ($examples->[1]) {
   if (1) {
     $Data::Dumper::Deepcopy = 1;
     #print STDERR Dumper($object->wollmers(\@a,\@b)),"\n";
-    print STDERR Data::Dumper->Dump($object->wollmers(\@a,\@b)),"\n";
+    print STDERR 'wollmers: ',Data::Dumper->Dump($object->wollmers(\@a,\@b)),"\n";
+
     print STDERR Dumper(Align::Sequence::BV->LCS3($as,$bs)),"\n";
   }
 }
 }
 
+if (1) {
+#for my $example (@$examples) {
+for my $example ($examples->[15]) {
+  my $a = $example->[0];
+  my $b = $example->[1];
+  my @a = $a =~ /([^_])/g;
+  my @b = $b =~ /([^_])/g;
+
+  my $as = $a;
+  my $bs = $b;
+  $as =~ s/_//g;
+  $bs =~ s/_//g;
+
+  #print STDERR Dumper($object->wollmers(\@a,\@b)),"\n";
+
+  #print STDERR Dumper([ $lcs->LCS(\@a,\@b) ]),"\n";
+
+  #is_deeply(
+  cmp_deeply(
+    Align::Sequence::BV->LCS_64(\@a,\@b),
+    any(@{$object->wollmers(\@a,\@b)} ),
+
+    "$a, $b"
+  );
+  if (0) {
+    $Data::Dumper::Deepcopy = 1;
+    print STDERR Data::Dumper->Dump($object->wollmers(\@a,\@b)),"\n";
+    print STDERR 'ag: ',Dumper(Align::Sequence::BV->LCS_64(\@a,\@b)),"\n";
+  }
+}
+}
 
 if (0) {
 for my $example (@$examples) {
@@ -281,7 +313,7 @@ for my $example (@$examples) {
 }
 }
 
-if (1) {
+if (0) {
 #for my $example (@$examples) {
 for my $example ($examples->[0]) {
   my $a = $example->[0];
