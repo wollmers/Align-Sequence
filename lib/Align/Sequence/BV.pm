@@ -4,6 +4,7 @@ use 5.008;
 use strict;
 use warnings;
 our $VERSION = '0.01';
+use utf8;
 
 use Data::Dumper;
 
@@ -51,6 +52,12 @@ sub count_bits_32 {
   return  ($bits & 0x0000ffff) + (($bits & 0xffff0000) >>16);
 }
 
+# L. Allison and T. L. Dix. A bit-string longest common subsequence algorithm.
+# Information Processing Letters, 23:305–310, 1986.
+
+# H. Hyyrö. Bit-parallel LCS-length computation revisited. In Proc. 15th
+# Australasian Workshop on Combinatorial Algorithms (AWOCA 2004),
+# 2004.
 sub LLCS_64 {
   my ($self,$a,$b) = @_;
 
@@ -163,6 +170,16 @@ sub _replaceNextLargerWith {
     return $low;
 }
 
+# Implemented according to
+
+# J. W. Hunt and T. G. Szymanski.
+# A fast algorithm for computing longest common subsequences.
+# Commun. ACM, 20(5):350–353, 1977.
+
+# M. Crochemore, C. S. Iliopoulos, and Y. J. Pinzon. Speeding-up Hirschberg
+# and Hunt-Szymanski LCS algorithms. In Proc. 8th International Symposium
+# on String Processing and Information Retrieval (SPIRE’01), pages
+# 59–67. IEEE CS Press, 2001.
 
 sub LCS_64 {
   my ($ctx, $a, $b) = @_;
