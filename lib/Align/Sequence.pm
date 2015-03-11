@@ -432,6 +432,17 @@ sub wollmers {
       }
     }
   }
+  if (1 && ($m < 20)) {
+    print '    ',join(' ',@$Y),"\n";
+    print '  ';
+    for my $j (0..$n) { my $a = $c->[0][$j]; print $a,' ';}
+    print "\n";
+    for ($i=1;$i<=$m;$i++) {
+      my $x = $X->[$i-1];print $x,' ';
+      for my $j (0..$n) { my $a = $c->[$i][$j]; print $a,' ';}
+      print "\n";
+    }
+  }
   my $max = scalar keys %$ranks;
   return $self->wollmersAll($ranks,1,$max);
 }

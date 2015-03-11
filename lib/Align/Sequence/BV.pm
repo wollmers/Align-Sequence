@@ -9,6 +9,7 @@ use utf8;
 use Data::Dumper;
 
 ### or better $ perl -E " say  int 0.999+log(~0)/log(2) "
+# thx perlmonks
 our $width = int 0.999+log(~0)/log(2);
 
 no warnings 'portable';
@@ -64,7 +65,7 @@ sub LLCS_64 {
   use integer;
 
   my $positions;
-  $positions->{substr($b,$_,1)} |= 1 << ($_ % 64) for 0..length($b)-1;
+  $positions->{substr($b,$_,1)} |= 1 << ($_ % $width) for 0..length($b)-1;
 
   my $v = ~0;
 
@@ -199,7 +200,7 @@ sub LCS_64 {
   }
 
   my $positions;
-  $positions->{$a->[$_]} |= 1 << ($_ % 64) for $amin..$amax;
+  $positions->{$a->[$_]} |= 1 << ($_ % $width) for $amin..$amax;
 
   my $S = 2**@$a-1;
 
@@ -253,7 +254,6 @@ sub LCS_64 {
         # now insertion point is in $k.
         $thresh->[$k] = $i if (defined $k);    # overwrite next larger
       }
-      # end   inlining _replaceNextLargerWith()
       if (defined $k) {
         $links->[$k] = [ ( $k ? $links->[ $k - 1 ] : undef ), $i, $j ];
       }
@@ -273,6 +273,194 @@ sub LCS_64 {
             map([++$amax => $_], ($bmax+1) .. $#$b) ];
 }
 
+# C. S. Iliopoulos and Y. J. Pinzon. Recovering an lcs in O(n2/w) time and
+# space. Columbian Journal of Computation, 3(1):41–51, 2002.
+sub LCS_64i {
+  my ($ctx, $a, $b) = @_;
+
+  #use integer;
+  no warnings 'portable'; # for 0xffffffffffffffff
+
+  my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
+
+  while (1 && $amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
+    $amin++;
+    $bmin++;
+  }
+  while (1 && $amin <= $amax and $bmin <= $bmax and $a->[$amax] eq $b->[$bmax]) {
+    $amax--;
+    $bmax--;
+  }
+
+  my $positions;
+  $positions->{$a->[$_]} |= 1 << ($_ % $width) for $amin..$amax;
+
+  my $S = 2**@$a-1;
+  #my $m = scalar @$a;
+
+  my $Ks = [];
+  my $Vs = [];
+  my $bj;
+  my $SS;
+
+  # outer loop
+  for my $j ($bmin..$bmax) {
+    $bj = $b->[$j];
+    next unless (defined $positions->{$bj});
+    my $y = $positions->{$bj};
+
+    $SS = ($S + ($S & $y)) | ($S & ~$y);
+    $Ks->[$j] = ($S ^ $SS) & $S;
+    $Vs->[$j] = $SS;
+    #print $j,' ',$bj,' ',sprintf("%0${m}b",$y),' ',sprintf("%0${m}b",$SS),' ',sprintf("%0${m}b",$K),"\n";
+    $S = $SS;
+  }
+  #print Dumper($Vs),Dumper($Ks);
+  # recover alignment
+  my @lcs;
+  my $mask = 2**@$a-1;
+
+  for my $j (reverse $bmin..$bmax) {
+    #print $j,"\n";
+    next unless (defined $Vs->[$j]);
+
+    #print $j,' ',sprintf("%0$#${a}b",$Vs->[$j]),' ',sprintf("%0${m}b",$Ks->[$j]),' ',sprintf("%0$#${a}b",$mask),"\n";
+
+    my $V_masked = ~$Vs->[$j] & $mask;
+    my $V_masked_c = $V_masked & $Ks->[$j];
+    #print $j,' ',sprintf("%0$#${a}b",$V_masked),' ',sprintf("%0${m}b",$Ks->[$j]),' ',sprintf("%0$#${a}b",$V_masked_c),"\n";
+
+    if ($V_masked_c) {
+      my $k = int(log($V_masked)/log(2));
+      my $l = int(log($V_masked_c)/log(2));
+
+      if ($k == $l) {
+      #if ($k == int(log($V_masked_c)/log(2))) { # slower
+        unshift @lcs, [$k,$j];
+        #$lcs->[$k] = [$k,$j];
+        $mask = 2**$k-1;
+      }
+    }
+  }
+  #return $lcs;
+  return [ map([$_ => $_], 0 .. ($bmin-1)),
+        @lcs,
+        #grep {defined $_} @$lcs,
+            map([++$amax => $_], ($bmax+1) .. $#$b) ];
+}
+
+
+# H. Hyyrö. A Note on Bit-Parallel Alignment Computation. In
+# M. Simánek and J. Holub, editors, Stringology, pages 79–87. Department
+# of Computer Science and Engineering, Faculty of Electrical
+# Engineering, Czech Technical University, 2004.
+
+sub LCS_64b {
+  my ($self, $a, $b) = @_;
+
+  use integer;
+  no warnings 'portable'; # for 0xffffffffffffffff
+
+  my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
+
+  while (0 && $amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
+    $amin++;
+    $bmin++;
+  }
+  while (0 && $amin <= $amax and $bmin <= $bmax and $a->[$amax] eq $b->[$bmax]) {
+    $amax--;
+    $bmax--;
+  }
+
+  my $positions;
+  $positions->{$a->[$_]} |= 1 << ($_ % $width) for $amin..$amax;
+
+  my $bj;
+
+  # H+ = H− = V+i = V− = 0
+  my $Hp = 0;
+  my $Hm = 0;
+  my $Vp = 0;
+  my $Vm = 0;
+  my $MVp = [];
+  my $MVm = [];
+
+  #my $L = 0;
+
+  # outer loop
+  for my $j ($bmin..$bmax) {
+    $bj = $b->[$j];
+    # next unless (defined $positions->{$bj});
+    my $y = $positions->{$bj} // 0;
+
+    $Hp = $Vm | ~($y | $Hm | $Hp );
+    $Hm = ((($y & $Vp) + $Vp) ^ $Vp);
+    #$L = ($Hp & 2**@$a) - ($Hm & 2**@$a);
+    $Hp = $Hp << 1;
+    $Hm = $Hm << 1;
+    $Vp = $Hm | ~($y | $Vm | $Hp );
+    #print $j,' ',$bj,' ',sprintf("%0$#${a}b",$y),' ',sprintf("%0$#${a}b",$Vp),"\n";
+    $MVp->[$j] = $Vp;
+    $Vm = $Hp & ($y | $Vm);
+    $MVm->[$j] = $Vm;
+  }
+  $self->print_bits($a, $b, $MVp);
+  return $self->RecoverAlignment($a, $b, $MVp, $MVm);
+}
+
+sub print_bits {
+  my ($self, $a, $b, $MV) = @_;
+
+  my $m = scalar @$a;
+  my $n = scalar @$b;
+
+  if (1 && ($m < 20)) {
+    print '  ',join(' ',@$b),"\n";
+    #print '  ';
+    #for my $j (0..$#$b) { my $bit = $MV->[$j]; print $a,' ';}
+    #print "\n";
+    for my $i (0..$#$a) {
+      my $x = $a->[$i];print $x,' ';
+      for my $j (0..$#$b) { my $bit = ($MV->[$j] & (1<<$i)) ? 1 : 0; print $bit,' ';}
+      print "\n";
+    }
+  }
+
+}
+
+sub RecoverAlignment {
+  my ($self, $a, $b, $delta1, $delta2) = @_;
+
+  my $i = $#$a;
+  my $j = $#$b;
+
+  print $j,' ',$i,"\n";
+
+  my $lcs =[];
+
+  while ($i >= 0 && $j >= 0) {
+    print $i,' ',$j,' ',sprintf("%0$#${a}b",$delta1->[$j]),' ',sprintf("%0$#${a}b",1<<$i),"\n";
+    if ($delta1->[$j] & (1<<$i)) {
+      print '[',$i,',_',']',"\n";
+      $i--;
+    }
+    else {
+      print $i,'*',$j,' ',sprintf("%0$#${a}b",$delta2->[$j]),' ',sprintf("%0$#${a}b",1<<$i),"\n";
+
+      if ($delta2->[$j-1] & (1<<$i)) {
+        print '[','_,',$j,']',"\n";
+      }
+      else {
+         unshift @$lcs, [$i,$j] if ($a->[$i] eq $b->[$j]);
+         print '[',$i,',',$j,']',"\n";
+         $i--;
+      }
+      $j--;
+    }
+  }
+  #print Dumper($lcs);
+  return $lcs;
+}
 
 sub match_list {
   my $bit_vector = shift;
@@ -341,7 +529,7 @@ sub closest {
   return $positions;
 }
 
-#=comment
+=comment
 
 # Apostolico/Guerra
 sub ag {
@@ -400,7 +588,7 @@ sub ag {
   return $lcs;
 }
 
-#=cut
+=cut
 
 1;
 
@@ -467,7 +655,7 @@ Helmut Wollmersdorfer E<lt>helmut.wollmersdorfer@gmail.comE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2014 by Helmut Wollmersdorfer
+Copyright 2014-2015 by Helmut Wollmersdorfer
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
