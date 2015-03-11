@@ -273,12 +273,14 @@ sub LCS_64 {
             map([++$amax => $_], ($bmax+1) .. $#$b) ];
 }
 
-# C. S. Iliopoulos and Y. J. Pinzon. Recovering an lcs in O(n2/w) time and
-# space. Columbian Journal of Computation, 3(1):41–51, 2002.
+# [IP02]  C. S. Iliopoulos and Y. J. Pinzon. Recovering an lcs in O(n**2/w) time and
+#         space. Columbian Journal of Computation, 3(1):41–51, 2002.
+# [Hyy04] H. Hyyrö. Bit-parallel LCS-length computation revisited. In Proc. 15th
+#         Australasian Workshop on Combinatorial Algorithms (AWOCA 2004), 2004.
 sub LCS_64i {
   my ($ctx, $a, $b) = @_;
 
-  #use integer;
+  use integer;
   no warnings 'portable'; # for 0xffffffffffffffff
 
   my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
@@ -295,8 +297,7 @@ sub LCS_64i {
   my $positions;
   $positions->{$a->[$_]} |= 1 << ($_ % $width) for $amin..$amax;
 
-  my $S = 2**@$a-1;
-  #my $m = scalar @$a;
+  my $S = ~0;
 
   my $Ks = [];
   my $Vs = [];
@@ -308,45 +309,39 @@ sub LCS_64i {
     $bj = $b->[$j];
     next unless (defined $positions->{$bj});
     my $y = $positions->{$bj};
-
-    $SS = ($S + ($S & $y)) | ($S & ~$y);
+    my $u = $S & $y;             # [Hyy04]
+    $SS = ($S + $u) | ($S - $u); # [Hyy04]
     $Ks->[$j] = ($S ^ $SS) & $S;
     $Vs->[$j] = $SS;
-    #print $j,' ',$bj,' ',sprintf("%0${m}b",$y),' ',sprintf("%0${m}b",$SS),' ',sprintf("%0${m}b",$K),"\n";
+    #print $j,' ',$bj,' ',sprintf("%0${m}b",$SS),' ',sprintf("%0${m}b",$K),"\n";
     $S = $SS;
   }
-  #print Dumper($Vs),Dumper($Ks);
   # recover alignment
   my @lcs;
   my $mask = 2**@$a-1;
 
   for my $j (reverse $bmin..$bmax) {
-    #print $j,"\n";
     next unless (defined $Vs->[$j]);
-
-    #print $j,' ',sprintf("%0$#${a}b",$Vs->[$j]),' ',sprintf("%0${m}b",$Ks->[$j]),' ',sprintf("%0$#${a}b",$mask),"\n";
 
     my $V_masked = ~$Vs->[$j] & $mask;
     my $V_masked_c = $V_masked & $Ks->[$j];
-    #print $j,' ',sprintf("%0$#${a}b",$V_masked),' ',sprintf("%0${m}b",$Ks->[$j]),' ',sprintf("%0$#${a}b",$V_masked_c),"\n";
 
     if ($V_masked_c) {
+      no integer;
       my $k = int(log($V_masked)/log(2));
       my $l = int(log($V_masked_c)/log(2));
 
-      if ($k == $l) {
-      #if ($k == int(log($V_masked_c)/log(2))) { # slower
+      if ($k & $l) {
         unshift @lcs, [$k,$j];
-        #$lcs->[$k] = [$k,$j];
         $mask = 2**$k-1;
       }
     }
   }
-  #return $lcs;
-  return [ map([$_ => $_], 0 .. ($bmin-1)),
-        @lcs,
-        #grep {defined $_} @$lcs,
-            map([++$amax => $_], ($bmax+1) .. $#$b) ];
+  return [
+    map([$_ => $_], 0 .. ($bmin-1)),
+    @lcs,
+    map([++$amax => $_], ($bmax+1) .. $#$b)
+  ];
 }
 
 
