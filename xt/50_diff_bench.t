@@ -11,7 +11,7 @@ use lib qw(../lib/);
 
 use Algorithm::Diff;
 use Algorithm::Diff::XS;
-use Algorithm::LCS;
+#use Algorithm::LCS;
 
 use Benchmark qw(:all) ;
 use Data::Dumper;
@@ -23,7 +23,7 @@ my $align = Align::Sequence->new;
 
 my $align_bv = Align::Sequence::BV->new;
 
-my $A_LCS = Algorithm::LCS->new();
+#my $A_LCS = Algorithm::LCS->new();
 
 my @data = (
   [split(//,'Chrerrplzon')],
@@ -73,6 +73,8 @@ sub align {
 
   while ($i < $imax && $j < $jmax) {}
 }
+
+=comment
 
 if (0) {
 
@@ -128,6 +130,8 @@ if (0) {
         },
     });
 }
+
+=cut
 
 if (1) {
 

@@ -298,6 +298,7 @@ sub LCS_64i {
   $positions->{$a->[$_]} |= 1 << ($_ % $width) for $amin..$amax;
 
   my $S = ~0;
+  my $m = @$a;
 
   my $Ks = [];
   my $Vs = [];
@@ -313,12 +314,13 @@ sub LCS_64i {
     $SS = ($S + $u) | ($S - $u); # [Hyy04]
     $Ks->[$j] = ($S ^ $SS) & $S;
     $Vs->[$j] = $SS;
-    #print $j,' ',$bj,' ',sprintf("%0${m}b",$SS),' ',sprintf("%0${m}b",$K),"\n";
+    print $j,' ',$bj,' ',sprintf("%0${m}b",$SS),' ',sprintf("%0${m}b",$Ks->[$j]),"\n";
     $S = $SS;
   }
   # recover alignment
   my @lcs;
   my $mask = 2**@$a-1;
+  print $#$Ks,' ',' ',' ',sprintf("%0${m}b",$Vs->[-1]),' ',sprintf("%0${m}b",$mask),"\n";
 
   for my $j (reverse $bmin..$bmax) {
     next unless (defined $Vs->[$j]);
@@ -327,11 +329,21 @@ sub LCS_64i {
     my $V_masked_c = $V_masked & $Ks->[$j];
 
     if ($V_masked_c) {
+      my $k;
+      my $l;
+      my $kk;
+      my $ll;
+      {
       no integer;
-      my $k = int(log($V_masked)/log(2));
-      my $l = int(log($V_masked_c)/log(2));
-
-      if ($k & $l) {
+      #$k = int(log($V_masked)/log(2));
+      $kk = log($V_masked)/log(2);
+      $k = int sprintf("%u",log($V_masked)/log(2));
+      $ll = log($V_masked_c)/log(2);
+      $l = int sprintf("%u",log($V_masked_c)/log(2));
+      }
+      print $j,' ',$k,' ',$kk,' ',$l,' ',$ll,' ',sprintf("%0${m}b",$V_masked),' ',sprintf("%0${m}b",$V_masked_c),"\n";
+      #if ($k & $l) {
+      if ($k == $l) {
         unshift @lcs, [$k,$j];
         $mask = 2**$k-1;
       }

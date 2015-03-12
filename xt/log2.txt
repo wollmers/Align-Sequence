@@ -1,0 +1,2 @@
+perl -e 'for my $i (1..63) {my $j=int(log(2**$i-1)/log(2));if ($j != $i-1) {print "$i $j \n";} }'
+

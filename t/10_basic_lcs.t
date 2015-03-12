@@ -11,6 +11,8 @@ use Test::More;
 use Test::Deep;
 #cmp_deeply([],any());
 
+use Data::Dumper;
+
 my $class = 'Align::Sequence';
 
 use_ok($class);
@@ -65,8 +67,8 @@ my $examples = [
     're'],
   [ 'abcdefg_',
     '_bcdefgh'],
-  [ 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY_',
-    '_bcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'],
+  [ 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVY_',
+    '_bcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVYZ'],
 ];
 
 sub is_in {
@@ -172,7 +174,7 @@ for my $example ($examples->[1]) {
 
 if (0) {
 #for my $example (@$examples) {
-for my $example ($examples->[15]) {
+for my $example ($examples->[18]) {
   my $a = $example->[0];
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;
@@ -195,33 +197,6 @@ for my $example (@$examples) {
   print STDERR $ra,"\n";
   #is_deeply([$ra,$rb],[$a, $b],"$as, $bs");
 
-}
-}
-
-use Algorithm::LCS;
-my $lcs = Algorithm::LCS->new();
-use Data::Dumper;
-
-if (0) {
-#for my $example (@$examples) {
-for my $example ($examples->[1]) {
-  my $a = $example->[0];
-  my $b = $example->[1];
-  my @a = $a =~ /([^_])/g;
-  my @b = $b =~ /([^_])/g;
-
-  #print STDERR Dumper([$object->basic_lcs(\@a,\@b)]),"\n";
-
-  #print STDERR Dumper([ $lcs->LCS(\@a,\@b) ]),"\n";
-
-  #is_deeply(
-  cmp_deeply(
-    [ $lcs->LCS(\@a,\@b) ],
-    any($object->basic_lcs(\@a,\@b) ),
-
-    "$a, $b"
-  );
-  print STDERR Dumper([ $lcs->LCS(\@a,\@b) ]),"\n";
 }
 }
 
@@ -264,7 +239,7 @@ for my $example ($examples->[1]) {
 
 if (1) {
 #for my $example (@$examples) {
-for my $example ($examples->[15]) {
+for my $example ($examples->[19]) {
   my $a = $example->[0];
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;
@@ -286,32 +261,11 @@ for my $example ($examples->[15]) {
 
     "$a, $b"
   );
-  if (0) {
+  if (1) {
     $Data::Dumper::Deepcopy = 1;
     print STDERR Data::Dumper->Dump($object->wollmers(\@a,\@b)),"\n";
     print STDERR 'ag: ',Dumper(Align::Sequence::BV->LCS_64i(\@a,\@b)),"\n";
   }
-}
-}
-
-if (0) {
-for my $example (@$examples) {
-#for my $example ($examples->[2]) {
-  my $a = $example->[0];
-  my $b = $example->[1];
-  my @a = $a =~ /([^_])/g;
-  my @b = $b =~ /([^_])/g;
-
-  #print STDERR Dumper([ $object->LCSidx(\@a,\@b) ]),"\n";
-
-  #print STDERR Dumper([ $lcs->LCS(\@a,\@b) ]),"\n";
-
-  is(
-    $object->basic_llcs(\@a,\@b) ,
-    $lcs->LCS(\@a,\@b) ,
-    "$a, $b"
-  );
-
 }
 }
 
