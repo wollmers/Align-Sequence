@@ -12,6 +12,10 @@ use Data::Dumper;
 # thx perlmonks
 our $width = int 0.999+log(~0)/log(2);
 
+#our $bitmap = {};
+#for (0..63) {my $x = 1 << $_; $bitmap->{$x} = $_;}
+#print Dumper($bitmap);
+
 no warnings 'portable';
 
 sub new {
@@ -278,78 +282,68 @@ sub LCS_64 {
 # [Hyy04] H. Hyyrö. Bit-parallel LCS-length computation revisited. In Proc. 15th
 #         Australasian Workshop on Combinatorial Algorithms (AWOCA 2004), 2004.
 sub LCS_64i {
-  my ($ctx, $a, $b) = @_;
+  my ($self, $a, $b) = @_;
 
   use integer;
   no warnings 'portable'; # for 0xffffffffffffffff
 
   my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
 
-  while (1 && $amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
+  while ($amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
     $amin++;
     $bmin++;
   }
-  while (1 && $amin <= $amax and $bmin <= $bmax and $a->[$amax] eq $b->[$bmax]) {
+  while ($amin <= $amax and $bmin <= $bmax and $a->[$amax] eq $b->[$bmax]) {
     $amax--;
     $bmax--;
   }
 
   my $positions;
-  $positions->{$a->[$_]} |= 1 << ($_ % $width) for $amin..$amax;
+  #$positions->{$a->[$_]} |= 1 << ($_ % $width) for $amin..$amax;
+  $positions->{$a->[$_]} |= 1 << $_ for $amin..$amax;
 
   my $S = ~0;
-  my $m = @$a;
+  #my $m = @$a;
 
   my $Ks = [];
   my $Vs = [];
-  my $bj;
-  my $SS;
+  my ($bj,$y,$u,$SS);
 
   # outer loop
   for my $j ($bmin..$bmax) {
     $bj = $b->[$j];
     next unless (defined $positions->{$bj});
-    my $y = $positions->{$bj};
-    my $u = $S & $y;             # [Hyy04]
+    $y = $positions->{$bj};
+    $u = $S & $y;             # [Hyy04]
     $SS = ($S + $u) | ($S - $u); # [Hyy04]
     $Ks->[$j] = ($S ^ $SS) & $S;
     $Vs->[$j] = $SS;
-    print $j,' ',$bj,' ',sprintf("%0${m}b",$SS),' ',sprintf("%0${m}b",$Ks->[$j]),"\n";
     $S = $SS;
   }
   # recover alignment
   my @lcs;
-  my $mask = 2**@$a-1;
-  print $#$Ks,' ',' ',' ',sprintf("%0${m}b",$Vs->[-1]),' ',sprintf("%0${m}b",$mask),"\n";
+  my $mask = (1 << @$a) - 1;
+  my ($k, $Vm, $Vmc);
 
-  for my $j (reverse $bmin..$bmax) {
+  #for my $j (reverse $bmin..$bmax) {
+  for (my $j=$bmax;$j>=$bmin;$j--) {
     next unless (defined $Vs->[$j]);
 
-    my $V_masked = ~$Vs->[$j] & $mask;
-    my $V_masked_c = $V_masked & $Ks->[$j];
+    $Vm = ~$Vs->[$j] & $mask;
+    $Vmc = $Vm & $Ks->[$j];
 
-    if ($V_masked_c) {
-      my $k;
-      my $l;
-      my $kk;
-      my $ll;
-      {
+    if ($Vmc && (($Vm ^ $Vmc) < ($Vmc))) {
       no integer;
-      #$k = int(log($V_masked)/log(2));
-      $kk = log($V_masked)/log(2);
-      $k = int sprintf("%u",log($V_masked)/log(2));
-      $ll = log($V_masked_c)/log(2);
-      $l = int sprintf("%u",log($V_masked_c)/log(2));
-      }
-      print $j,' ',$k,' ',$kk,' ',$l,' ',$ll,' ',sprintf("%0${m}b",$V_masked),' ',sprintf("%0${m}b",$V_masked_c),"\n";
-      #if ($k & $l) {
-      if ($k == $l) {
-        unshift @lcs, [$k,$j];
-        $mask = 2**$k-1;
-      }
+      my $Vmcs = $Vmc >> 32;
+      #$k = ($Vmc >> 32) ? int(log($Vmc >> 32)/log(2))+32 : int(log($Vmc)/log(2));
+      $k = ($Vmcs) ? int(log($Vmcs)/log(2))+32 : int(log($Vmc)/log(2));
+
+      unshift @lcs, [$k,$j];
+      $mask = (1 << $k) - 1;
     }
   }
-  return [
+  return
+  [
     map([$_ => $_], 0 .. ($bmin-1)),
     @lcs,
     map([++$amax => $_], ($bmax+1) .. $#$b)
@@ -491,35 +485,72 @@ sub sequences2hunks {
   return [ map { [ $a->[$_], $b->[$_] ] } 0..$#$a ];
 }
 
-
-sub _core_loop {}
-
 sub LCS {
-    my ($ctx, $a, $b) = @_;
-    my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
+  my $self = shift;
+  my $a        = shift;    # array ref or hash ref
+  my $b        = shift;    # array ref or hash ref
 
-    while ($amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
-        $amin++;
-        $bmin++;
+
+  my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
+
+if (1) {
+  while ($amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
+    $amin++;
+    $bmin++;
+  }
+  while ($amin <= $amax and $bmin <= $bmax and $a->[$amax] eq $b->[$bmax]) {
+    $amax--;
+    $bmax--;
+  }
+  #print '($amin, $amax, $bmin, $bmax): ',join(' ',($amin, $amax, $bmin, $bmax)),"\n";
+}
+
+  my $bMatches;
+  my $index;
+  unshift @{ $bMatches->{$_} },$index++ for @$b[$bmin..$bmax]; # @$b[$bmin..$bmax]
+
+  my $matchVector = [];
+
+  my $thresh = [];
+  my $links  = [];
+
+  my ( $i, $ai, $j, $k );
+  for ( $i = $amin ; $i <= $amax ; $i++ ) {
+    $ai = $a->[$i];
+    # the matching token
+    if ( exists( $bMatches->{$ai} ) ) {
+      $k = 0;
+      for $j ( @{ $bMatches->{$ai} } ) {
+        # optimization: most of the time this will be true
+        if ( $k and $thresh->[$k] > $j and $thresh->[ $k - 1 ] < $j ) {
+            $thresh->[$k] = $j;
+        }
+        else {
+          $k = _replaceNextLargerWith( $thresh, $j);
+        }
+        if (defined $k) {
+          $links->[$k] = [ ( $k ? $links->[ $k - 1 ] : undef ), $i, $j ];
+        }
+      }
     }
-    while ($amin <= $amax and $bmin <= $bmax and $a->[$amax] eq $b->[$bmax]) {
-        $amax--;
-        $bmax--;
+  }
+
+  if (@$thresh) {
+    for ( my $link = $links->[$#$thresh] ; $link ; $link = $link->[0] ) {
+      #print '$link: ',Dumper($link),"\n";
+      #$matchVector->[ $link->[1] ] = $link->[2];
+      $matchVector->[ $link->[1] ] = [$link->[1],$link->[2]+$bmin] if (defined $link->[2]);
     }
+  }
+  if (0) {
+    print '$bMatches: ',Dumper($bMatches),"\n";
+    print '$thresh: ',Dumper($thresh),"\n";
+    print '$links: ',Dumper($links),"\n";
+    print '$matchVector: ',Dumper($matchVector),"\n";
+  }
 
-    my $h = $ctx->line_map(@$b[$bmin..$bmax]); # line numbers are off by $bmin
-
-    return $amin + _core_loop($ctx, $a, $amin, $amax, $h) + ($#$a - $amax)
-        unless wantarray;
-
-    my @lcs = _core_loop($ctx,$a,$amin,$amax,$h);
-    if ($bmin > 0) {
-        $_->[1] += $bmin for @lcs; # correct line numbers
-    }
-
-    map([$_ => $_], 0 .. ($amin-1)),
-        @lcs,
-            map([$_ => ++$bmax], ($amax+1) .. $#$a);
+  return [ grep { defined $_ } @$matchVector ];
+  #return $matchVector;
 }
 
 sub closest {
@@ -547,15 +578,10 @@ sub ag {
 
   my $closest = $self->closest($b);
 
-
-
   $thresh->[0] = 0;
   for my $k (1 .. $m) {
     $thresh->[$k] = $n+1;
   }
-
-  #print Dumper($thresh);
-  #exit;
 
   my $links = [];
 

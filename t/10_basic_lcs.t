@@ -239,7 +239,7 @@ for my $example ($examples->[1]) {
 
 if (1) {
 #for my $example (@$examples) {
-for my $example ($examples->[19]) {
+for my $example ($examples->[15]) {
   my $a = $example->[0];
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;
@@ -256,7 +256,8 @@ for my $example ($examples->[19]) {
 
   #is_deeply(
   cmp_deeply(
-    Align::Sequence::BV->LCS_64i(\@a,\@b),
+    #Align::Sequence::BV->LCS_64i(\@a,\@b),
+    Align::Sequence::BV->LCS(\@a,\@b),
     any(@{$object->wollmers(\@a,\@b)} ),
 
     "$a, $b"
@@ -264,7 +265,7 @@ for my $example ($examples->[19]) {
   if (1) {
     $Data::Dumper::Deepcopy = 1;
     print STDERR Data::Dumper->Dump($object->wollmers(\@a,\@b)),"\n";
-    print STDERR 'ag: ',Dumper(Align::Sequence::BV->LCS_64i(\@a,\@b)),"\n";
+    print STDERR 'ag: ',Dumper(Align::Sequence::BV->LCS(\@a,\@b)),"\n";
   }
 }
 }

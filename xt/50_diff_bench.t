@@ -137,9 +137,9 @@ if (1) {
 
     cmpthese( 50_000, {
     #timethese( 50_000, {
-        'cdiff' => sub {
-            Algorithm::Diff::compact_diff(@data)
-        },
+       # 'cdiff' => sub {
+       #     Algorithm::Diff::compact_diff(@data)
+       # },
        # 'cdiffXS' => sub {
        #     Algorithm::Diff::XS::compact_diff(@data)
        # },
@@ -179,9 +179,9 @@ if (1) {
         #'A_LCS' => sub {
         #    [ $A_LCS->LCS(@data) ]
         #},
-        'align_bv' => sub {
-            [ $align_bv->LCS_64(@data) ]
-        },
+        #'align_bv' => sub {
+        #    [ $align_bv->LCS_64(@data) ]
+        #},
         'align_bvi' => sub {
             [ $align_bv->LCS_64i(@data) ]
         },
