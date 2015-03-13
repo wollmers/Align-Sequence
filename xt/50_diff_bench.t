@@ -182,6 +182,9 @@ if (1) {
         #'align_bv' => sub {
         #    [ $align_bv->LCS_64(@data) ]
         #},
+        'align_LCS' => sub {
+            [ $align_bv->LCS(@data) ]
+        },
         'align_bvi' => sub {
             [ $align_bv->LCS_64i(@data) ]
         },

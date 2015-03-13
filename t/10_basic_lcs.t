@@ -238,8 +238,8 @@ for my $example ($examples->[1]) {
 }
 
 if (1) {
-#for my $example (@$examples) {
-for my $example ($examples->[15]) {
+for my $example (@$examples) {
+#for my $example ($examples->[15]) {
   my $a = $example->[0];
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;
@@ -262,7 +262,7 @@ for my $example ($examples->[15]) {
 
     "$a, $b"
   );
-  if (1) {
+  if (0) {
     $Data::Dumper::Deepcopy = 1;
     print STDERR Data::Dumper->Dump($object->wollmers(\@a,\@b)),"\n";
     print STDERR 'ag: ',Dumper(Align::Sequence::BV->LCS(\@a,\@b)),"\n";

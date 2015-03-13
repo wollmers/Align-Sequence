@@ -325,7 +325,6 @@ sub LCS_64i {
   my $mask = (1 << @$a) - 1;
   my ($k, $Vm, $Vmc);
 
-  #for my $j (reverse $bmin..$bmax) {
   for (my $j=$bmax;$j>=$bmin;$j--) {
     next unless (defined $Vs->[$j]);
 
@@ -335,7 +334,7 @@ sub LCS_64i {
     if ($Vmc && (($Vm ^ $Vmc) < ($Vmc))) {
       no integer;
       my $Vmcs = $Vmc >> 32;
-      #$k = ($Vmc >> 32) ? int(log($Vmc >> 32)/log(2))+32 : int(log($Vmc)/log(2));
+      # still a dangerous mix of bit, float, integer ...
       $k = ($Vmcs) ? int(log($Vmcs)/log(2))+32 : int(log($Vmc)/log(2));
 
       unshift @lcs, [$k,$j];
@@ -490,10 +489,8 @@ sub LCS {
   my $a        = shift;    # array ref or hash ref
   my $b        = shift;    # array ref or hash ref
 
-
   my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
 
-if (1) {
   while ($amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
     $amin++;
     $bmin++;
@@ -502,12 +499,10 @@ if (1) {
     $amax--;
     $bmax--;
   }
-  #print '($amin, $amax, $bmin, $bmax): ',join(' ',($amin, $amax, $bmin, $bmax)),"\n";
-}
 
   my $bMatches;
   my $index;
-  unshift @{ $bMatches->{$_} },$index++ for @$b[$bmin..$bmax]; # @$b[$bmin..$bmax]
+  push @{ $bMatches->{$b->[$_]} },$_ for $bmin..$bmax; # @$b[$bmin..$bmax]
 
   my $matchVector = [];
 
@@ -537,20 +532,16 @@ if (1) {
 
   if (@$thresh) {
     for ( my $link = $links->[$#$thresh] ; $link ; $link = $link->[0] ) {
-      #print '$link: ',Dumper($link),"\n";
-      #$matchVector->[ $link->[1] ] = $link->[2];
-      $matchVector->[ $link->[1] ] = [$link->[1],$link->[2]+$bmin] if (defined $link->[2]);
+      $matchVector->[ $link->[1] ] = [$link->[1],$link->[2]] if (defined $link->[2]);
     }
   }
-  if (0) {
-    print '$bMatches: ',Dumper($bMatches),"\n";
-    print '$thresh: ',Dumper($thresh),"\n";
-    print '$links: ',Dumper($links),"\n";
-    print '$matchVector: ',Dumper($matchVector),"\n";
-  }
 
-  return [ grep { defined $_ } @$matchVector ];
-  #return $matchVector;
+  return
+  [
+    map([$_ => $_], 0 .. ($bmin-1)),
+    grep { defined $_ } @$matchVector,
+    map([++$amax => $_], ($bmax+1) .. $#$b)
+  ];
 }
 
 sub closest {
