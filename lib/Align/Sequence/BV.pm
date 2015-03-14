@@ -501,27 +501,39 @@ sub LCS {
   }
 
   my $bMatches;
-  my $index;
-  push @{ $bMatches->{$b->[$_]} },$_ for $bmin..$bmax; # @$b[$bmin..$bmax]
+  unshift @{ $bMatches->{$b->[$_]} },$_ for $bmin..$bmax; # @$b[$bmin..$bmax]
 
   my $matchVector = [];
-
   my $thresh = [];
   my $links  = [];
 
   my ( $i, $ai, $j, $k );
   for ( $i = $amin ; $i <= $amax ; $i++ ) {
     $ai = $a->[$i];
-    # the matching token
     if ( exists( $bMatches->{$ai} ) ) {
-      $k = 0;
       for $j ( @{ $bMatches->{$ai} } ) {
-        # optimization: most of the time this will be true
-        if ( $k and $thresh->[$k] > $j and $thresh->[ $k - 1 ] < $j ) {
-            $thresh->[$k] = $j;
+        if ( !@$thresh || $j > $thresh->[-1] ) {
+          $k = $#$thresh+1;
+          $thresh->[$k] = $j;
         }
         else {
-          $k = _replaceNextLargerWith( $thresh, $j);
+          # binary search for insertion point
+          $k = 0;
+          my $index;
+          my $found;
+          my $high = $#$thresh;
+          while ( $k <= $high ) {
+            use integer;
+            $index = ( $high + $k ) / 2;
+            #$index = int(( $high + $k ) / 2);  # without 'use integer'
+            $found = $thresh->[$index];
+
+            if ( $j == $found ) { $k = undef; last; }
+            elsif ( $j > $found ) { $k = $index + 1; }
+            else { $high = $index - 1; }
+          }
+          # now insertion point is in $k.
+          $thresh->[$k] = $j if (defined $k);    # overwrite next larger
         }
         if (defined $k) {
           $links->[$k] = [ ( $k ? $links->[ $k - 1 ] : undef ), $i, $j ];
@@ -529,19 +541,14 @@ sub LCS {
       }
     }
   }
-
   if (@$thresh) {
     for ( my $link = $links->[$#$thresh] ; $link ; $link = $link->[0] ) {
-      $matchVector->[ $link->[1] ] = [$link->[1],$link->[2]] if (defined $link->[2]);
+      unshift @$matchVector,[$link->[1],$link->[2]];
     }
   }
-
-  return
-  [
-    map([$_ => $_], 0 .. ($bmin-1)),
-    grep { defined $_ } @$matchVector,
-    map([++$amax => $_], ($bmax+1) .. $#$b)
-  ];
+  return [ map([$_ => $_], 0 .. ($bmin-1)),
+        @$matchVector,
+            map([++$amax => $_], ($bmax+1) .. $#$b) ];
 }
 
 sub closest {
@@ -554,7 +561,6 @@ sub closest {
       $positions->{$b->[$j-1]}->[$i] = $j;
     }
   }
-  #print Dumper($positions);
   return $positions;
 }
 

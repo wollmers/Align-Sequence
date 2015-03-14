@@ -150,10 +150,10 @@ if (1) {
        #     Algorithm::Diff::XS::sdiff(@data)
        # },
        'LCSidx' => sub {
-            Algorithm::Diff::LCSidx(@data)
+            Algorithm::Diff::LCSidx(@data2)
         },
         'LCSidxXS' => sub {
-            Algorithm::Diff::XS::LCSidx(@data)
+            Algorithm::Diff::XS::LCSidx(@data2)
         },
         #'fast_sdiff' => sub {
         #    fast_sdiff(@data)
@@ -183,10 +183,10 @@ if (1) {
         #    [ $align_bv->LCS_64(@data) ]
         #},
         'align_LCS' => sub {
-            [ $align_bv->LCS(@data) ]
+            [ $align_bv->LCS(@data2) ]
         },
         'align_bvi' => sub {
-            [ $align_bv->LCS_64i(@data) ]
+            [ $align_bv->LCS_64i(@data2) ]
         },
     });
 

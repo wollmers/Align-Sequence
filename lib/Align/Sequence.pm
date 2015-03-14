@@ -432,7 +432,7 @@ sub wollmers {
       }
     }
   }
-  if (1 && ($m < 20)) {
+  if (0 && ($m < 20)) {
     print '    ',join(' ',@$Y),"\n";
     print '  ';
     for my $j (0..$n) { my $a = $c->[0][$j]; print $a,' ';}
