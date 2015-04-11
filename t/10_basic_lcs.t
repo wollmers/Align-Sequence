@@ -186,15 +186,17 @@ for my $example ($examples->[18]) {
 }
 }
 
-if (0) {
+if (1) {
 for my $example (@$examples) {
 #for my $example ($examples->[1]) {
   my $a = $example->[0];
   my $b = $example->[1];
   $a =~ s/_//g;
   $b =~ s/_//g;
-  my $ra = $object->lcs_greedy($a,$b);
-  print STDERR $ra,"\n";
+  my @a = $a =~ /([^_])/g;
+  my @b = $b =~ /([^_])/g;
+  my $d = $object->basic_distance(\@a,\@b);
+  print STDERR $a,' ',$b,' ',$d,"\n";
   #is_deeply([$ra,$rb],[$a, $b],"$as, $bs");
 
 }

@@ -14,6 +14,8 @@ sub new {
   bless @_ ? @_ > 1 ? {@_} : {%{$_[0]}} : {}, ref $class || $class;
 }
 
+
+sub LCSidx { shift->_align4(@_,0) }
 sub align2 { shift->align(@_,1) }
 
 ##################################################
@@ -68,6 +70,89 @@ sub align {
 
 
 #################################
+sub _align4 {
+  my $self     = shift;
+  my $a        = shift;
+  my $b        = shift;
+
+
+  my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
+
+if (1) {
+  while ($amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
+    $amin++;
+    $bmin++;
+  }
+  while ($amin <= $amax and $bmin <= $bmax and $a->[$amax] eq $b->[$bmax]) {
+    $amax--;
+    $bmax--;
+  }
+  #print '($amin, $amax, $bmin, $bmax): ',join(' ',($amin, $amax, $bmin, $bmax)),"\n";
+}
+
+
+
+  my $bMatches;
+  my $index;
+  unshift @{ $bMatches->{$_} },$index++ for @$b[$bmin..$bmax]; # @$b[$bmin..$bmax]
+
+  #my $aMatches;
+  #@$aMatches = grep { exists( $bMatches->{$a->[$amin+$_]} ) } 0..$amax-$amin;
+
+  my $matchVector = [];
+
+  my $thresh = [];
+  my $links  = [];
+
+  my ( $i, $ai, $j, $k );
+  for ( $i = $amin ; $i <= $amax ; $i++ ) {
+    $ai = $a->[$i];
+    # the matching token
+    if ( exists( $bMatches->{$ai} ) ) {
+      $k = 0;
+      for $j ( @{ $bMatches->{$ai} } ) {
+        # optimization: most of the time this will be true
+        if ( $k and $thresh->[$k] > $j and $thresh->[ $k - 1 ] < $j ) {
+            $thresh->[$k] = $j;
+        }
+        else {
+          $k = _replaceNextLargerWith( $thresh, $j, $k );
+          #$k = _search( $thresh, $j, $k );
+        }
+        if (defined $k) {
+          $links->[$k] = [ ( $k ? $links->[ $k - 1 ] : undef ), $i, $j ];
+        }
+      }
+    }
+  }
+
+  if (@$thresh) {
+    for ( my $link = $links->[$#$thresh] ; $link ; $link = $link->[0] ) {
+      #print '$link: ',Dumper($link),"\n";
+      #$matchVector->[ $link->[1] ] = $link->[2];
+      $matchVector->[ $link->[1] ] = [$link->[1],$link->[2]+$bmin] if (defined $link->[2]);
+    }
+  }
+
+
+  my $L = [
+    map([$_ => $_], 0 .. ($amin-1)),
+    grep { defined $_ } @$matchVector,
+    map([$_ => ++$bmax], ($amax+1) .. $#$a)
+  ];
+  if (1) {
+    print '$bMatches: ',Dumper($bMatches),"\n";
+    print '$thresh: ',Dumper($thresh),"\n";
+    print '$links: ',Dumper($links),"\n";
+    print '$matchVector: ',Dumper($matchVector),"\n";
+    print '$L: ',Dumper($L),"\n";
+  }
+
+  #my $L = [ grep { defined $_ } @$matchVector ];
+  return $L;
+}
+
+#################################
 sub sequences2hunks {
   my $self = shift;
   my ($a, $b) = @_;
@@ -92,6 +177,33 @@ sub hunks2sequences {
   return ($a,$b);
 }
 
+sub _replaceNextLargerWith {
+    my ( $thresh, $j, $high ) = @_;
+    $high ||= $#$thresh;
+
+    # off the end?
+    if ( $high == -1 || $j > $thresh->[-1] ) {
+        push ( @$thresh, $j );
+        return $high + 1;
+    }
+    # binary search for insertion point...
+    my $low = 0;
+    my $index;
+    my $found;
+    while ( $low <= $high ) {
+        use integer;
+        $index = ( $high + $low ) / 2;
+        #$index = int(( $high + $low ) / 2);  # without 'use integer'
+        $found = $thresh->[$index];
+        if ( $j == $found ) { return undef; }
+        elsif ( $j > $found ) { $low = $index + 1; }
+        else { $high = $index - 1; }
+    }
+    # now insertion point is in $low.
+    $thresh->[$low] = $j;    # overwrite next larger
+    return $low;
+}
+
 sub _search {
   my ( $thresh, $j, $high ) = @_;
   $high ||= $#$thresh;
@@ -111,6 +223,7 @@ sub _search {
 }
 
 sub basic_llcs {
+
   my ($self,$X,$Y) = @_;
 
   if (scalar @$Y > scalar @$X) {
@@ -121,6 +234,7 @@ sub basic_llcs {
 
   my $m = scalar @$X;
   my $n = scalar @$Y;
+    # vector< vector<int> > c(2, vector<int>(n+1,0));
 
   my $c = [];
 
@@ -130,6 +244,7 @@ sub basic_llcs {
     }
   }
 
+  #print '$c: ',Dumper($c),"\n";
   my ($i,$j);
 
   for ($i=1; $i <= $m; $i++) {
@@ -145,6 +260,8 @@ sub basic_llcs {
       $c->[0][$j] = $c->[1][$j];
     }
   }
+  #print '$c: ',Dumper($c),"\n";
+  #print 'llcs: ',$c->[1][$n],"\n";
   return ($c->[1][$n]);
 }
 
@@ -153,8 +270,6 @@ sub basic_distance {
 
   my $m = scalar @$X;
   my $n = scalar @$Y;
-
-  $change_cost = 1;
 
   my $c = [];
   my ($i,$j);
@@ -199,63 +314,6 @@ sub basic_distance {
   return $distance;
 }
 
-sub one_edit {
-  my ($self,$a,$b,$D) = @_;
-  my $i = scalar @$a;
-  my $j = scalar @$b;
-  my $S = [];
-  while ($i > 0 or $j > 0) {
-    if ($D->[$i]->[$j] == $D->[$i-1]->[$j] +1) {
-      unshift @$S,[$i,undef];
-      $i--;
-    }
-    elsif ($D->[$i]->[$j] == $D->[$i]->[$j-1] +1) {
-      unshift @$S,[undef,$j];
-      $i--;
-    }
-    else {
-      unshift @$S,[$i,$j];
-      $i--;
-      $j--;
-    }
-  }
-  return $S;
-}
-
-sub all_edits {
-  my ($self,$a,$b,$D,$i,$j,$S) = @_;
-  $i //= scalar @$a;
-  $j //= scalar @$b;
-  my $S = [];
-  unless ($i or $j) {return [[]] }
-
-  while ($i > 0 or $j > 0) {
-    my $min = $self->min3(
-      $D->[$i-1]->[$j],
-      $D->[$i]->[$j-1],
-      $D->[$i-1]->[$j-1],
-    );
-    if ($i && $min == $D->[$i-1]->[$j]) {
-      my $heads = $self->all_edits($a,$b,$D,$i-1,$j);
-      for my $head (@$heads) {
-        push @$S,[@$head,[$i,undef]];
-      }
-    }
-    if ($j && $min == $D->[$i]->[$j-1]) {
-      my $heads = $self->all_edits($a,$b,$D,$i,$j-1);
-      for my $head (@$heads) {
-         push @$S,[@$head,[undef,$j]];
-    }
-    if ($i && $j && $min == $D->[$i-1]->[$j-1]) {
-      my $heads = $self->all_edits($a,$b,$D,$i-1,$j-1);
-      for my $head (@$heads) {
-        push @$S,[@$head,[$i,$j]];
-    }
-  }
-  return $S;
-}
-
-
 sub basic_lcs {
   my ($self,$X,$Y) = @_;
 
@@ -266,7 +324,7 @@ sub basic_lcs {
   my ($i,$j);
   for ($i=0;$i<=$m;$i++) {
     for ($j=0;$j<=$n;$j++) {
-      $c->[$i][$j]=0;
+             $c->[$i][$j]=0;
     }
   }
   for ($i=1;$i<=$m;$i++) {
@@ -279,7 +337,9 @@ sub basic_lcs {
       }
     }
   }
-
+  #return $c;
+  #print '$c: ',Dumper($c),"\n";
+  #print '$X: ',Dumper($X),"\n";
   if (1 && ($m < 20)) {
     print '    ',join(' ',@$Y),"\n";
     print '  ';
@@ -292,8 +352,13 @@ sub basic_lcs {
     }
   }
 
+  #my $L = [];
+  #my @R = $self->print_lcs($X,$Y,$c,$m,$n);
+  #my @R = $self->backtrackAll($X,$Y,$c,$m,$n);
   my $path = $self->greenberg($X,$Y,$c,$m,$n);
   return $path;
+  #print '@R: ',Dumper(\@R),"\n";
+  #return @R;
 }
 
 
@@ -306,15 +371,15 @@ sub print_lcs {
 
   if ($i==0 || $j==0) { return ([]); }
   if ($X->[$i-1] eq $Y->[$j-1]) {
-    $L = $self->print_lcs($X,$Y,$c,$i-1,$j-1,$L);
-    #print $X->[$i-1];
-    push @{$L},[$i-1,$j-1];
+       $L = $self->print_lcs($X,$Y,$c,$i-1,$j-1,$L);
+       #print $X->[$i-1];
+       push @{$L},[$i-1,$j-1];
   }
   elsif ($c->[$i][$j] == $c->[$i-1][$j]) {
-    $L = $self->print_lcs($X,$Y,$c,$i-1,$j,$L);
+      $L = $self->print_lcs($X,$Y,$c,$i-1,$j,$L);
   }
   else {
-    $L = $self->print_lcs($X,$Y,$c,$i,$j-1,$L);
+      $L = $self->print_lcs($X,$Y,$c,$i,$j-1,$L);
   }
   return $L;
 }
@@ -361,10 +426,9 @@ sub wollmers {
         push @{$ranks->{$c->[$i][$j]}},[$i-1,$j-1];
       }
       else {
-        $c->[$i][$j] =
-          ($c->[$i][$j-1] > $c->[$i-1][$j])
-            ? $c->[$i][$j-1]
-            : $c->[$i-1][$j];
+        $c->[$i][$j] = ($c->[$i][$j-1] > $c->[$i-1][$j])
+                         ? $c->[$i][$j-1]
+                         : $c->[$i-1][$j];
       }
     }
   }
@@ -406,14 +470,23 @@ sub score {
 
 sub needleman_wunsch {
 
+=comment
 
-#for i=1 to length(A)
-#  for j=1 to length(B) {
-#    Match ← F(i-1,j-1) + S(Ai, Bj)
-#    Delete ← F(i-1, j) + d
-#    Insert ← F(i, j-1) + d
-#    F(i,j) ← max(Match, Insert, Delete)
-#  }
+calculating the F matrix
+
+for i=0 to length(A)
+  F(i,0) ← d*i
+for j=0 to length(B)
+  F(0,j) ← d*j
+for i=1 to length(A)
+  for j=1 to length(B) {
+    Match ← F(i-1,j-1) + S(Ai, Bj)
+    Delete ← F(i-1, j) + d
+    Insert ← F(i, j-1) + d
+    F(i,j) ← max(Match, Insert, Delete)
+  }
+
+=cut
 
   my ($self,$X,$Y) = @_;
 
@@ -442,6 +515,33 @@ sub needleman_wunsch {
   }
 
   $self->print_matrix($X,$Y,$m,$n,$c) if (1);
+
+=comment
+
+AlignmentA ← ""
+AlignmentB ← ""
+i ← length(A)
+j ← length(B)
+while (i > 0 or j > 0) {
+  if (i > 0 and j > 0 and F(i,j) == F(i-1,j-1) + S(Ai, Bj)) {
+    AlignmentA ← Ai + AlignmentA
+    AlignmentB ← Bj + AlignmentB
+    i ← i - 1
+    j ← j - 1
+  }
+  else if (i > 0 and F(i,j) == F(i-1,j) + d) {
+    AlignmentA ← Ai + AlignmentA
+    AlignmentB ← "-" + AlignmentB
+    i ← i - 1
+  }
+  else (j > 0 and F(i,j) == F(i,j-1) + d) {
+    AlignmentA ← "-" + AlignmentA
+    AlignmentB ← Bj + AlignmentB
+    j ← j - 1
+  }
+}
+
+=cut
 
   my $align_a = '';
   my $align_b = '';
@@ -492,6 +592,89 @@ sub print_matrix {
 }
 
 
+sub lcs_greedy {
+    my ($self,$x,$y) = @_;
+
+    print STDERR '$x: ',$x,' $y: ',$y,"\n";
+    my $r = 0;
+    my $p = 0;
+    my $p1;
+    my $L = '';
+    my $idx;
+	my $m = length($x);
+	my $n = length($y);
+	my $i;
+
+	$p1 = $self->popsym(0,$x,$r,$y,$n);
+	for ($i=0;$i < $m;$i++) {
+		$p = ($r == $p) ? $p1 : $self->popsym($i,$x,$r,$y,$n);
+		$p1 = $self->popsym($i+1,$x,$r,$y,$n);
+		if ($p > $p1) {$i++; $idx = $p1; }
+		else {$idx = $p;}
+		if ($idx == $n) { $p = $self->popsym($i,$x,$r,$y,$n); }
+		else{
+			$r = $idx;
+			$L .= substr($x,$i,1);
+		}
+	}
+	return $L;
+}
+
+sub popsym {
+    my ($self,$i,$x,$r,$y,$n) = @_;
+
+    my $s = substr($x,$i,1);
+    my $pos = index($y,$s,$r);
+    if ($pos == -1 ) { $pos = $n;}
+    return $pos;
+}
+
+sub commonPrefix {
+  my ($self, $a, $b) = @_;
+  #if (!$a || !$b || substr($a,0,1) ne substr($b,0,1)) {
+   # return 0;
+  #}
+  my $pointermin = 0;
+  my $pointermax = (length($a) <= length($b)) ? length($a) : length($b);
+  my $pointermid = $pointermax;
+  #my $pointerstart = 0;
+  while ($pointermin < $pointermid) {
+    if (substr($a,$pointermin, $pointermid) eq
+        substr($b,$pointermin, $pointermid)) {
+      $pointermin = $pointermid;
+      #$pointerstart = $pointermin;
+    } else {
+      $pointermax = $pointermid;
+    }
+    $pointermid = int(($pointermax - $pointermin) / 2 + $pointermin);
+  }
+  return $pointermid;
+};
+
+sub commonPrefix2 {
+  my ($self, $a, $b) = @_;
+
+  my $min = 0;
+  my $max = (length($a) <= length($b)) ? length($a) : length($b);
+
+  while ($min < $max and substr($a,$min,1) eq substr($b,$min,1)) {
+    $min++;
+  }
+  return $min;
+};
+
+sub commonPrefix3 {
+  my ($self, $a, $b) = @_;
+
+  my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
+
+  while ($amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
+    $amin++;
+    $bmin++;
+  }
+
+  return $amin;
+};
 
 1;
 __END__
