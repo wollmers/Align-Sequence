@@ -7,8 +7,8 @@ use utf8;
 
 use lib qw(../lib/);
 
-my $class = 'Align::Sequence';
-use Align::Sequence;
+my $class = 'Align::Sequence::BV';
+use Align::Sequence::BV;
 
 my $object = $class->new;
 
@@ -85,7 +85,7 @@ for my $example ($examples->[13]) {
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;
   my @b = $b =~ /([^_])/g;
-  my $hunks = $object->LCSidx(\@a,\@b);  
+  my $hunks = $object->LCS_64i(\@a,\@b);  
 }
 }
 
