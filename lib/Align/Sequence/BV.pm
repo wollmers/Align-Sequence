@@ -8,13 +8,8 @@ use utf8;
 
 use Data::Dumper;
 
-### or better $ perl -E " say  int 0.999+log(~0)/log(2) "
 # thx perlmonks
 our $width = int 0.999+log(~0)/log(2);
-
-#our $bitmap = {};
-#for (0..63) {my $x = 1 << $_; $bitmap->{$x} = $_;}
-#print Dumper($bitmap);
 
 no warnings 'portable';
 
@@ -329,6 +324,7 @@ sub LCS_64i {
     next unless (defined $Vs->[$j]);
 
     $Vm = ~$Vs->[$j] & $mask;
+    #$Vm = ~$Vs->[$j];
     $Vmc = $Vm & $Ks->[$j];
 
     if ($Vmc && (($Vm ^ $Vmc) < ($Vmc))) {
@@ -362,11 +358,11 @@ sub LCS_64b {
 
   my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
 
-  while (0 && $amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
+  while (1 && $amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
     $amin++;
     $bmin++;
   }
-  while (0 && $amin <= $amax and $bmin <= $bmax and $a->[$amax] eq $b->[$bmax]) {
+  while (1 && $amin <= $amax and $bmin <= $bmax and $a->[$amax] eq $b->[$bmax]) {
     $amax--;
     $bmax--;
   }
@@ -374,40 +370,50 @@ sub LCS_64b {
   my $positions;
   $positions->{$a->[$_]} |= 1 << ($_ % $width) for $amin..$amax;
 
-  my $bj;
+  my $S = ~0;
 
-  # H+ = H− = V+i = V− = 0
-  my $Hp = 0;
-  my $Hm = 0;
-  my $Vp = 0;
-  my $Vm = 0;
-  my $MVp = [];
-  my $MVm = [];
-
-  #my $L = 0;
+  my $Vs = [];
+  my ($bj,$y,$u);
 
   # outer loop
   for my $j ($bmin..$bmax) {
     $bj = $b->[$j];
-    # next unless (defined $positions->{$bj});
-    my $y = $positions->{$bj} // 0;
-
-    $Hp = $Vm | ~($y | $Hm | $Hp );
-    $Hm = ((($y & $Vp) + $Vp) ^ $Vp);
-    #$L = ($Hp & 2**@$a) - ($Hm & 2**@$a);
-    $Hp = $Hp << 1;
-    $Hm = $Hm << 1;
-    $Vp = $Hm | ~($y | $Vm | $Hp );
-    #print $j,' ',$bj,' ',sprintf("%0$#${a}b",$y),' ',sprintf("%0$#${a}b",$Vp),"\n";
-    $MVp->[$j] = $Vp;
-    $Vm = $Hp & ($y | $Vm);
-    $MVm->[$j] = $Vm;
+    unless (defined $positions->{$bj}) {
+      $Vs->[$j] = $S;
+      next;
+    }
+    $y = $positions->{$bj};
+    $u = $S & $y;             # [Hyy04]
+    $S = ($S + $u) | ($S - $u); # [Hyy04]
+    $Vs->[$j] = $S;
   }
-  $self->print_bits($a, $b, $MVp);
-  return $self->RecoverAlignment($a, $b, $MVp, $MVm);
+
+  # recover alignment
+  my @lcs;
+  my $i = $amax;
+  my $j = $bmax;
+
+  while ($i >= $amin && $j >= $bmin) {
+    if ($Vs->[$j] & (1<<$i)) {
+      $i--;
+    }
+    else {
+      unless ($j && ~$Vs->[$j-1] & (1<<$i)) {
+         unshift @lcs, [$i,$j];
+         $i--;
+      }
+      $j--;
+    }
+  }
+
+  return [
+    map([$_ => $_], 0 .. ($bmin-1)),
+    @lcs,
+    map([++$amax => $_], ($bmax+1) .. $#$b)
+  ];
 }
 
-sub print_bits {
+sub _print_bits {
   my ($self, $a, $b, $MV) = @_;
 
   my $m = scalar @$a;
@@ -425,40 +431,6 @@ sub print_bits {
     }
   }
 
-}
-
-sub RecoverAlignment {
-  my ($self, $a, $b, $delta1, $delta2) = @_;
-
-  my $i = $#$a;
-  my $j = $#$b;
-
-  print $j,' ',$i,"\n";
-
-  my $lcs =[];
-
-  while ($i >= 0 && $j >= 0) {
-    print $i,' ',$j,' ',sprintf("%0$#${a}b",$delta1->[$j]),' ',sprintf("%0$#${a}b",1<<$i),"\n";
-    if ($delta1->[$j] & (1<<$i)) {
-      print '[',$i,',_',']',"\n";
-      $i--;
-    }
-    else {
-      print $i,'*',$j,' ',sprintf("%0$#${a}b",$delta2->[$j]),' ',sprintf("%0$#${a}b",1<<$i),"\n";
-
-      if ($delta2->[$j-1] & (1<<$i)) {
-        print '[','_,',$j,']',"\n";
-      }
-      else {
-         unshift @$lcs, [$i,$j] if ($a->[$i] eq $b->[$j]);
-         print '[',$i,',',$j,']',"\n";
-         $i--;
-      }
-      $j--;
-    }
-  }
-  #print Dumper($lcs);
-  return $lcs;
 }
 
 sub match_list {
@@ -483,139 +455,7 @@ sub sequences2hunks {
   return [ map { [ $a->[$_], $b->[$_] ] } 0..$#$a ];
 }
 
-sub LCS {
-  my ($self, $a, $b) = @_;
 
-  my ($amin, $amax, $bmin, $bmax) = (0, $#$a, 0, $#$b);
-
-  while ($amin <= $amax and $bmin <= $bmax and $a->[$amin] eq $b->[$bmin]) {
-    $amin++;
-    $bmin++;
-  }
-  while ($amin <= $amax and $bmin <= $bmax and $a->[$amax] eq $b->[$bmax]) {
-    $amax--;
-    $bmax--;
-  }
-
-  my $bMatches;
-  unshift @{ $bMatches->{$b->[$_]} },$_ for $bmin..$bmax;
-
-  my $matchVector = [];
-  my $thresh = [];
-  my $links  = [];
-
-  my ( $i, $ai, $j, $k );
-  for ( $i = $amin ; $i <= $amax ; $i++ ) {
-    $ai = $a->[$i];
-    if ( exists( $bMatches->{$ai} ) ) {
-      for $j ( @{ $bMatches->{$ai} } ) {
-        if ( !@$thresh || $j > $thresh->[-1] ) {
-          $k = $#$thresh+1;
-          $thresh->[$k] = $j;
-        }
-        else {
-          # binary search for insertion point
-          $k = 0;
-          my $index;
-          my $found;
-          my $high = $#$thresh;
-          while ( $k <= $high ) {
-            use integer;
-            $index = ( $high + $k ) / 2;
-            #$index = int(( $high + $k ) / 2);  # without 'use integer'
-            $found = $thresh->[$index];
-
-            if ( $j == $found ) { $k = undef; last; }
-            elsif ( $j > $found ) { $k = $index + 1; }
-            else { $high = $index - 1; }
-          }
-          # now insertion point is in $k.
-          $thresh->[$k] = $j if (defined $k);    # overwrite next larger
-        }
-        if (defined $k) {
-          $links->[$k] = [ ( $k ? $links->[ $k - 1 ] : undef ), $i, $j ];
-        }
-      }
-    }
-  }
-  if (@$thresh) {
-    for ( my $link = $links->[$#$thresh] ; $link ; $link = $link->[0] ) {
-      unshift @$matchVector,[$link->[1],$link->[2]];
-    }
-  }
-  return [ map([$_ => $_], 0 .. ($bmin-1)),
-        @$matchVector,
-            map([++$amax => $_], ($bmax+1) .. $#$b) ];
-}
-
-sub closest {
-  my ($self, $b) = @_;
-  my $positions = {};
-
-  for (my $j = scalar(@$b);$j >= 1;$j--) {
-    $positions->{$b->[$j-1]} //= [(scalar(@$b)+1) x (scalar(@$b)+1)];
-    for my $i (0..$j) {
-      $positions->{$b->[$j-1]}->[$i] = $j;
-    }
-  }
-  return $positions;
-}
-
-=comment
-
-# Apostolico/Guerra
-sub ag {
-  my ($self, $a, $b) = @_;
-  my $thresh = [];
-  my $m = @$a;
-  my $n = @$b;
-
-  my $closest = $self->closest($b);
-
-  $thresh->[0] = 0;
-  for my $k (1 .. $m) {
-    $thresh->[$k] = $n+1;
-  }
-
-  my $links = [];
-
-  for my $i (1 .. $m) {
-    my $j = $closest->{$a->[$i-1]}->[1] // $n+1;
-    my $k = 1;
-    #print '$j: ',$j,"\n";
-    #exit;
-    while ($j < $n+1) {
-      if ($j > $thresh->[$k-1] && $j < $thresh->[$k]) {
-        my $temp = $thresh->[$k];
-        $thresh->[$k] = $j;
-        # record minimal match
-        #$links->[$k-1] = [ ( $k-1 ? $links->[ $k - 2 ] : undef ), $i-1, $j-1 ];
-        $links->[$k-1] = [ $i-1, $j-1 ];
-
-        $j = $closest->{$a->[$i-1]}->[$temp+1] // $n+1;
-      }
-      elsif ($j == $thresh->[$k]) {
-        $j = $closest->{$a->[$i-1]}->[$j+1] // $n+1;
-      }
-      $k++;
-    }
-  }
-  #print '$thresh: ',Dumper($thresh);
-  #print '$links: ',Dumper($links);
-  #my $matchVector = [];
-  #if (@$thresh) {
-  #  for ( my $link = $links->[$#$links] ; $link ; $link = $link->[0] ) {
-   #   $matchVector->[ $link->[1] ] = [$link->[1],$link->[2]] if (defined $link->[2]);
-   # }
-  #}
-  #print '$matchVector: ',Dumper($matchVector);
-  #my $lcs = [ grep { defined $_ } @$matchVector ];
-  my $lcs = [ grep { defined $_ } @$links ];
-  #print '$lcs: ',Dumper($lcs);
-  return $lcs;
-}
-
-=cut
 
 1;
 

@@ -85,7 +85,18 @@ for my $example ($examples->[13]) {
   my $b = $example->[1];
   my @a = $a =~ /([^_])/g;
   my @b = $b =~ /([^_])/g;
-  my $hunks = $object->LCS_64i(\@a,\@b);  
+  my $hunks = $object->LCS_64i(\@a,\@b);
+}
+}
+
+
+if (1) {
+for my $example ($examples->[13]) {
+  my $a = $example->[0];
+  my $b = $example->[1];
+  my @a = $a =~ /([^_])/g;
+  my @b = $b =~ /([^_])/g;
+  my $hunks = $object->LCS_64b(\@a,\@b);  
 }
 }
 
